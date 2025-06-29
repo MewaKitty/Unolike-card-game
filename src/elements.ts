@@ -26,6 +26,14 @@ pickupPile.appendChild(pickupLabel);
 pickupLabel.textContent = "Pick up here";
 pickupPile.appendChild((game.pickupCard).wrapper)
 app.appendChild(pickupPile);
+pickupPile.addEventListener("click", async () => {
+    const placeholderDiv = document.createElement("div");
+    placeholderDiv.classList.add("wrapper");
+    cardRack.appendChild(placeholderDiv)
+    setTimeout(() => placeholderDiv.remove(), 200)
+    await game.animateElementMovement(game.pickupCard.element, placeholderDiv, game.pickupCard.wrapper)
+    game.addToRack(game.pickupCard)
+})
 
 const opponentHand = document.createElement("div");
 opponentHand.classList.add("opponentHand")

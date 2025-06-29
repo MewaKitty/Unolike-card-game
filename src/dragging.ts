@@ -1,18 +1,36 @@
 import { Card } from "./cards.ts";
-import { game, updateInventoryPlayability } from "./game.ts";
+import { game } from "./game.ts";
 
 let draggedCard: Card | null = null;
 export let dragGap: { x: number, y: number } = { x: -1, y: -1 };
+export const dragGaps: {x: number, y: number}[] = [];
 export const setDraggedCard = (card: Card) => draggedCard = card;
 
 export const setupDragging = () => {
     const cardDiscard = document.getElementsByClassName("cardDiscard")[0];
     const cardRack = document.getElementsByClassName("cardRack")[0];
-    const pickupPile = document.getElementsByClassName("pickupPile")[0];
     document.body.addEventListener("pointermove", e => {
         if (!draggedCard) return;
+        if (!draggedCard.element.classList.contains("dragging")) {
+            draggedCard = null;
+            for (const card of game.selectedCards) {
+                card.element.classList.remove("dragging");
+                card.element.style.left = "";
+                card.element.style.top = "";
+            }
+            return;
+        }
         draggedCard.element.style.left = e.pageX - dragGap.x + "px";
         draggedCard.element.style.top = e.pageY - dragGap.y + "px";
+        if (game.selectedCards.includes(draggedCard)) {
+            for (const [index, card] of game.selectedCards.entries()) {
+                card.element.classList.add("dragging");
+                card.element.style.left = e.pageX - dragGap.x - 20 * index + "px";
+                card.element.style.top = e.pageY - dragGap.y - 20 * index + "px";
+                card.element.style.zIndex = "2";
+            }
+            draggedCard.element.style.zIndex = "3";
+        }
         for (const destination of document.getElementsByClassName("dragDestination")) {
             if (e.pageX > destination.getBoundingClientRect().x
                 && e.pageY > destination.getBoundingClientRect().y
@@ -37,27 +55,18 @@ export const setupDragging = () => {
                 && e.pageX < destination.getBoundingClientRect().x + destination.getBoundingClientRect().width
                 && e.pageY < destination.getBoundingClientRect().y + destination.getBoundingClientRect().height) {
                 if (!draggedCard.tags.includes("pickup") && destination === cardDiscard) {
-                    cardDiscard.textContent = "";
-                    cardDiscard.appendChild(draggedCard.wrapper)
-                    game.discarded.push(draggedCard);
-                    game.inventory.splice(game.inventory.indexOf(draggedCard), 1)
-                    updateInventoryPlayability();
-                    game.updateCardDiscard();
+                    if (game.selectedCards.includes(draggedCard)) {
+                        for (const card of game.selectedCards) card.element.classList.remove("selectedCard");
+                        for (const card of game.selectedCards.filter(card => card !== draggedCard)) game.discardCard(card);
+                        game.discardCard(draggedCard);
+                        game.selectedCards.length = 0;
+                    } else {
+                        game.discardCard(draggedCard);
+                    };
                     game.opponentTurn();
                 }
                 if (destination === cardRack) {
-                    cardRack.appendChild(draggedCard.wrapper);
-                    if (game.inventory.includes(draggedCard)) game.inventory.splice(game.inventory.indexOf(draggedCard), 1)
-                    game.inventory.push(draggedCard);
-                    draggedCard.hidden = false;
-                    draggedCard.updateElement();
-                    updateInventoryPlayability();
-                    if (draggedCard.tags.includes("pickup")) {
-                        draggedCard.tags.splice(draggedCard.tags.indexOf("pickup"), 1);
-                        game.pickupCard = new Card(true, ["pickup"])
-                        pickupPile.appendChild(game.pickupCard.wrapper)
-                        game.opponentTurn();
-                    }
+                    if (!game.inventory.includes(draggedCard)) game.addToRack(draggedCard);
                 }
             }
             destination.classList.remove("dragTarget")
@@ -65,5 +74,18 @@ export const setupDragging = () => {
         draggedCard = null;
         dragGap.x = -1;
         dragGap.y = -1;
+        dragGaps.length = 0;
+        for (const card of game.selectedCards) {
+            card.element.classList.remove("dragging");
+            card.element.style.left = "";
+            card.element.style.top = "";
+        }
+        setTimeout(() => {   
+            for (const card of game.selectedCards) {
+                card.element.classList.remove("dragging");
+                card.element.style.left = "";
+                card.element.style.top = "";
+            }
+        }, 100)
     })
 }

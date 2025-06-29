@@ -29,19 +29,21 @@
   padding: 1rem;
   background: var(--color);
   width: fit-content;
-  height: 10rem;
+  height: 9rem;
   width: 5rem;
-  outline: 1px solid #333;
+  border: 2px solid #333;
   border-radius: .5rem;
-  cursor: grab;
+  cursor: pointer;
   box-sizing: border-box;
-  transition: left 80ms, top 80ms;
+  --translateY: 0;
+  transition: left 80ms, top 80ms, opacity 160ms;
 }
 
 .cardWrapper {
-  height: 10rem;
+  height: 9rem;
   width: 5rem;
   user-select: none;
+  transition: outline 160ms;
 }
 
 .cardRack {
@@ -68,6 +70,7 @@
   display: flex;
   flex-direction: column;
   gap: .3rem;
+  cursor: pointer;
 }
 
 .cardDiscard {
@@ -105,4 +108,13 @@
 
 .cardDiscard .card {
   cursor: default;
+}
+
+.opponentHand .card {
+  cursor: not-allowed;
+}
+
+div.selectedCard {
+  outline: .3rem solid #77ff77;
+  border-radius: .5rem;
 }

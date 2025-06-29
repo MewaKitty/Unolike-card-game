@@ -1,8 +1,8 @@
 import { random } from "./utils.ts";
-import { game } from "./game.ts";
+import { game, updateInventoryPlayability } from "./game.ts";
 import colorData from "./data/colors.json";
 import numberData from "./data/numbers.json";
-import { dragGap, setDraggedCard } from "./dragging.ts";
+import { dragGap, dragGaps, setDraggedCard } from "./dragging.ts";
 
 interface CardColor {
   name: string,
@@ -13,7 +13,6 @@ interface CardNumber {
   name: string,
   value: number
 }
-
 
 export class Card {
   number: CardNumber
@@ -35,15 +34,50 @@ export class Card {
     this.updateElement();
     wrapper.appendChild(this.element);
     this.wrapper = wrapper;
+    let pointerDownTime = 0;
     div.addEventListener("pointerdown", e => {
-      if (!hidden && !this.playableOn(game.discarded.at(-1)!)) return;
+      if (!this.tags.includes("pickup") && !this.isPlayable()) return;
       if (this.tags.includes("discarded")) return;
+      if (!this.tags.includes("pickup") && wrapper.parentElement !== document.getElementsByClassName("cardRack")[0]) return;
+      pointerDownTime = Date.now();
       dragGap.x = e.pageX - div.getBoundingClientRect().left;
       dragGap.y = e.pageY - div.getBoundingClientRect().top;
       div.style.left = div.getBoundingClientRect().left + "px";
       div.style.top = div.getBoundingClientRect().top + "px";
       div.classList.add("dragging")
       setDraggedCard(this);
+      for (const card of game.selectedCards) {
+        //card.element.classList.add("dragging");
+        dragGaps.push({
+          x: e.pageX - card.element.getBoundingClientRect().left,
+          y: e.pageY - card.element.getBoundingClientRect().top
+        });
+        /*
+        card.element.style.left = card.element.getBoundingClientRect().left + "px";
+        card.element.style.top = card.element.getBoundingClientRect().top + "px";*/
+      }
+    })
+    wrapper.addEventListener("pointerup", async () => {
+      if (Date.now() - pointerDownTime > 350) return;
+      if (!this.tags.includes("pickup") && !this.isPlayable()) return;
+      if (!game.inventory.includes(this)) return;
+      if (this.tags.includes("discarded")) return;
+      if (div.classList.contains("selectedCard")) {
+        div.classList.remove("selectedCard")
+        game.selectedCards.splice(game.selectedCards.indexOf(this), 1)
+      } else {
+        div.classList.add("selectedCard")
+        game.selectedCards.push(this);
+      }
+      updateInventoryPlayability();
+      /*
+      if (wrapper.parentElement !== document.getElementsByClassName("cardRack")[0]) return;
+      game.discarded.push(this);
+      game.inventory.splice(game.inventory.indexOf(this), 1)
+      this.wrapper.classList.add("dragging");
+      await game.animateElementMovement(this.wrapper, document.getElementsByClassName("cardDiscard")[0].children[0] as HTMLElement, document.getElementsByClassName("cardDiscard")[0])
+      this.wrapper.classList.remove("dragging")
+      await game.opponentTurn();*/
     })
   }
   updateElement () {
@@ -58,5 +92,9 @@ export class Card {
     if (card.number === this.number) return true;
     if (card.color === this.color) return true;
     return false;
+  }
+  isPlayable () {
+    if (game.selectedCards.length > 0) return this.number === game.selectedCards[0].number;
+    return this.playableOn(game.discarded.at(-1)!);
   }
 }
