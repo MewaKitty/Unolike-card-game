@@ -1,0 +1,108 @@
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+}
+
+#app {
+  min-height: 100dvh;
+}
+
+.card {
+  display: flex;
+  padding: 1rem;
+  background: var(--color);
+  width: fit-content;
+  height: 10rem;
+  width: 5rem;
+  outline: 1px solid #333;
+  border-radius: .5rem;
+  cursor: grab;
+  box-sizing: border-box;
+  transition: left 80ms, top 80ms;
+}
+
+.cardWrapper {
+  height: 10rem;
+  width: 5rem;
+  user-select: none;
+}
+
+.cardRack {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  width: calc(100vw - 2rem);
+  height: 10rem;
+  background: #eee;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid #333;
+  display: flex;
+  gap: 1rem;
+}
+
+.pickupPile {
+  position: absolute;
+  top: 8rem;
+  left: 10vw;
+  padding: 2rem;
+  border-radius: .5rem;
+  background: #ccc;
+  display: flex;
+  flex-direction: column;
+  gap: .3rem;
+}
+
+.cardDiscard {
+  position: absolute;
+  top: 8rem;
+  left: 30vw;
+  padding: 1rem;
+  border-radius: .5rem;
+}
+
+.dragging {
+  position: fixed;
+  cursor: grabbing;
+  z-index: 2;
+}
+
+.dragTarget {
+  outline: 2px solid #77ee77;
+}
+
+.unplayable {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.opponentHand {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  padding: 2rem;
+  background: #ccc;
+  border-bottom-left-radius: 1rem;
+}
+
+.cardDiscard .card {
+  cursor: default;
+}
