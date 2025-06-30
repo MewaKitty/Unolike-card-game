@@ -1,5 +1,5 @@
 import { Card } from "./cards.ts";
-import { shuffleArray } from "./utils.ts";
+import { shuffleArray, randomInteger } from "./utils.ts";
 
 export const discardedCards: Card[] = []
 
@@ -11,6 +11,7 @@ export class Game {
     selectedCards: Card[];
     drawAmount: number;
     playersTurn: boolean;
+    pressureAmount: number;
     constructor () {
         this.inventory = [];
         this.opponentHand = [];
@@ -23,6 +24,7 @@ export class Game {
         this.selectedCards = [];
         this.drawAmount = 0;
         this.playersTurn = true;
+        this.pressureAmount = 1;
     }
     updateCardDiscard () {
         const cardDiscard = document.getElementsByClassName("cardDiscard")[0];
@@ -68,7 +70,7 @@ export class Game {
             updateInventoryPlayability();
             return;
         }
-        for (const card of this.opponentHand) {
+        for (const card of this.opponentHand.filter(card => card.number.actionId !== "swap")) {
             if (card.playableOn(this.discarded.at(-1)!)) {
                 await this.opponentDiscard(card);
                 if (card.number.actionId === "skip") await this.opponentTurn();
@@ -99,6 +101,10 @@ export class Game {
             game.drawAmount += card.number.draw;
             document.getElementsByClassName("drawAmountText")[0].textContent = "+" + game.drawAmount;
         }
+        if (card.modifier?.draw) {
+            game.drawAmount += card.modifier?.draw;
+            document.getElementsByClassName("drawAmountText")[0].textContent = "+" + game.drawAmount;
+        }
         updateInventoryPlayability();
         return new Promise(res => {
             setTimeout(() => {
@@ -117,7 +123,7 @@ export class Game {
             }, 100)
         })
     }
-    opponentPickup () {
+    opponentPickup (): Promise<Card> {
         const card = game.pickupCard;
         card.wrapper.style.position = "fixed";
         card.wrapper.style.left = card.wrapper.getBoundingClientRect().left + "px";
@@ -137,7 +143,7 @@ export class Game {
                 card.wrapper.style.position = "";
                 opponentHand.appendChild(card.wrapper);
                 game.opponentHand.push(card);
-                res(null);
+                res(card);
             }, 500)
         }, 100)
         })
@@ -166,8 +172,13 @@ export class Game {
         game.inventory.splice(game.inventory.indexOf(card), 1)
         updateInventoryPlayability();
         game.updateCardDiscard();
+        if (game.inventory.length === 0 || game.opponentHand.length === 0) return;
         if (card.number.draw) {
             game.drawAmount += card.number.draw;
+            document.getElementsByClassName("drawAmountText")[0].textContent = "+" + game.drawAmount;
+        }
+        if (card.modifier?.draw) {
+            game.drawAmount += card.modifier?.draw;
             document.getElementsByClassName("drawAmountText")[0].textContent = "+" + game.drawAmount;
         }
         if (card.number.actionId === "swap") {
@@ -190,8 +201,139 @@ export class Game {
             for (let i = 0; i < opponentHandCount; i++) game.opponentHand.push(allCards.shift()!);
             this.updateHands();
         }
+        if (card.number.actionId === "50") {
+            if (Math.random() > 0.5) {
+                game.drawAmount += 4;
+                document.getElementsByClassName("drawAmountText")[0].textContent = "+" + game.drawAmount;
+                return true;
+            } else {
+                game.drawAmount += 4;
+                document.getElementsByClassName("drawAmountText")[0].textContent = "+" + game.drawAmount;
+            }
+        }
+        if (card.modifier?.actionId === "x2") {
+            game.pressureAmount += 2;
+            if (game.pressureAmount >= 10) {
+                game.drawAmount += randomInteger(1, 10);
+                game.pressureAmount = 1;
+                document.getElementsByClassName("drawAmountText")[0].textContent = "+" + game.drawAmount;
+            }
+            document.getElementsByClassName("pressureCount")[0].textContent = "Pressure: " + game.pressureAmount + "/10";
+        }
+        if (card.number.actionId === "discardAll") {
+            console.log("inventory", game.inventory)
+            for (const secondCard of game.inventory) {
+                if (secondCard.color !== card.color) continue;
+                game.discarded.unshift(secondCard);
+                secondCard.wrapper.remove();
+                game.inventory.splice(game.inventory.indexOf(secondCard), 1)
+                updateInventoryPlayability();
+                console.log("discard");
+                console.log(secondCard);
+            }
+        }
+        if (card.number?.actionId === "x10") {
+            game.drawAmount += randomInteger(1, 10);
+            game.pressureAmount = 1;
+            document.getElementsByClassName("drawAmountText")[0].textContent = "+" + game.drawAmount;
+            document.getElementsByClassName("pressureCount")[0].textContent = "Pressure: " + game.pressureAmount + "/10";
+        }
+        if (card.number?.actionId === "drawColor") {
+            game.playersTurn = false;
+            (async () => {
+                for (let i = 0; i < 25; i++) {
+                    const newCard = await this.opponentPickup();
+                    if (newCard.color === card.color) break;
+                }
+                await game.opponentTurn();
+            })();
+            return true;
+        }
+        if (card.modifier?.actionId === "randomOccurance") {
+            switch (randomInteger(1, 8)) {
+                case 1:
+                    while (game.inventory.length > 2) {
+                        game.discarded.unshift(game.inventory[0]);
+                        game.inventory[0].wrapper.remove();
+                        game.inventory.splice(game.inventory.indexOf(game.inventory[0]), 1)
+                        updateInventoryPlayability();
+                    }
+                    break;
+                case 2:
+                    const number = game.inventory[0].number;
+                    for (const secondCard of game.inventory) {
+                        if (secondCard.number === number) {
+                            game.discarded.unshift(game.inventory[0]);
+                            game.inventory[0].wrapper.remove();
+                            game.inventory.splice(game.inventory.indexOf(game.inventory[0]), 1)
+                            updateInventoryPlayability();
+                        }
+                    }
+                    break;
+                case 3:
+                    const color = game.inventory[0].color;
+                    for (const secondCard of game.inventory) {
+                        if (secondCard.color === color) {
+                            game.discarded.unshift(game.inventory[0]);
+                            game.inventory[0].wrapper.remove();
+                            game.inventory.splice(game.inventory.indexOf(game.inventory[0]), 1)
+                            updateInventoryPlayability();
+                        }
+                    }
+                    break;
+                case 4:
+                    game.playersTurn = false;
+                    (async () => {
+                        for (let i = 0; i < 25; i++) {
+                            const newCard = await this.opponentPickup();
+                            if (newCard.color === card.color) break;
+                        }
+                        await game.opponentTurn();
+                    })();
+                    return true;
+                case 5:
+                    const playersHand = Array.from(game.inventory);
+                    const opponentHand = Array.from(game.opponentHand);
+                    game.inventory.length = 0;
+                    for (const card of opponentHand) game.inventory.push(card);
+                    game.opponentHand.length = 0;
+                    for (const card of playersHand) game.opponentHand.push(card);
+                    this.updateHands();
+                    break;
+                case 6:
+                    break;
+                case 7:
+                    const highestPlayer = Array.from(game.inventory).sort((a, b) => b.number?.value ?? -1 - (a.number?.value ?? -1))[0]
+                    const highestOpponent = Array.from(game.opponentHand).sort((a, b) => b.number?.value ?? -1 - (a.number?.value ?? -1))[0]
+                    if ((highestPlayer.number?.value ?? -1) > (highestOpponent.number?.value ?? -1)) {
+                        game.discarded.unshift(highestPlayer);
+                        game.inventory.splice(game.inventory.indexOf(highestPlayer), 1)
+                        updateInventoryPlayability();
+                        highestPlayer.wrapper.remove();
+                    } else {
+                        game.discarded.unshift(highestOpponent);
+                        game.opponentHand.splice(game.opponentHand.indexOf(highestOpponent), 1)
+                        updateInventoryPlayability();
+                        highestOpponent.wrapper.remove();
+                    }
+                    break;
+                case 8:
+                    if (Math.random() > 0.5) {
+                        game.discarded.unshift(game.inventory[0]);
+                        game.inventory[0].wrapper.remove();
+                        game.inventory.splice(game.inventory.indexOf(game.inventory[0]), 1)
+                        updateInventoryPlayability();
+                    } else {
+                        game.discarded.unshift(game.opponentHand[0]);
+                        game.opponentHand[0].wrapper.remove();
+                        game.opponentHand.splice(game.opponentHand.indexOf(game.opponentHand[0]), 1)
+                        updateInventoryPlayability();
+                    }
+            }
+        }
     }
     applyOpponentDiscardEffects (card: Card) {
+        if (game.inventory.length === 0 || game.opponentHand.length === 0) return;
         if (card.number.actionId === "swap") {
             const playersHand = Array.from(game.inventory);
             const opponentHand = Array.from(game.opponentHand);
@@ -211,6 +353,145 @@ export class Game {
             for (let i = 0; i < playersHandCount; i++) game.inventory.push(allCards.shift()!);
             for (let i = 0; i < opponentHandCount; i++) game.opponentHand.push(allCards.shift()!);
             this.updateHands();
+        }
+        if (card.number.actionId === "50") {
+            if (Math.random() > 0.5) {
+                game.drawAmount += 4;
+                document.getElementsByClassName("drawAmountText")[0].textContent = "+" + game.drawAmount;
+                game.opponentTurn();
+            } else {
+                game.drawAmount += 4;
+                document.getElementsByClassName("drawAmountText")[0].textContent = "+" + game.drawAmount;
+            }
+        }
+        if (card.modifier?.actionId === "x2") {
+            game.pressureAmount += 2;
+            if (game.pressureAmount >= 10) {
+                game.drawAmount += randomInteger(1, 10);
+                game.pressureAmount = 1;
+                document.getElementsByClassName("drawAmountText")[0].textContent = "+" + game.drawAmount;
+            }
+            document.getElementsByClassName("pressureCount")[0].textContent = "Pressure: " + game.pressureAmount + "/10";
+        }
+        if (card.number.actionId === "discardAll") {
+            for (const secondCard of game.opponentHand) {
+                if (secondCard.color !== card.color) continue;
+                game.discarded.unshift(secondCard);
+                secondCard.wrapper.remove();
+                game.opponentHand.splice(game.opponentHand.indexOf(secondCard), 1)
+                updateInventoryPlayability();
+            }
+        }
+        if (card.number?.actionId === "x10") {
+            game.drawAmount += randomInteger(1, 10);
+            game.pressureAmount = 1;
+            document.getElementsByClassName("drawAmountText")[0].textContent = "+" + game.drawAmount;
+            document.getElementsByClassName("pressureCount")[0].textContent = "Pressure: " + game.pressureAmount + "/10";
+        }
+        if (card.number?.actionId === "drawColor") {
+            (async () => {
+                const placeholderDiv = document.createElement("div");
+                placeholderDiv.classList.add("wrapper");
+                document.getElementsByClassName("cardRack")[0].appendChild(placeholderDiv)
+                setTimeout(() => placeholderDiv.remove(), 200)
+                await game.animateElementMovement(game.pickupCard.element, placeholderDiv, game.pickupCard.wrapper)
+                const pickupCard = game.pickupCard
+                game.addToRack(game.pickupCard)
+                if (pickupCard.color === card.color) return;
+                for (let i = 0; i < 25; i++) {
+                    const newCard = new Card();
+                    this.addToRack(newCard);
+                    if (newCard.color === card.color) return;
+                }
+            })();
+        }
+        if (card.modifier?.actionId === "randomOccurance") {
+            switch (randomInteger(1, 8)) {
+                case 1:
+                    while (game.opponentHand.length > 2) {
+                        game.discarded.unshift(game.opponentHand[0]);
+                        game.opponentHand[0].wrapper.remove();
+                        game.opponentHand.splice(game.opponentHand.indexOf(game.opponentHand[0]), 1)
+                        updateInventoryPlayability();
+                    }
+                    break;
+                case 2:
+                    const number = game.opponentHand[0].number;
+                    for (const secondCard of game.opponentHand) {
+                        if (secondCard.number === number) {
+                            game.discarded.unshift(game.opponentHand[0]);
+                            game.opponentHand[0].wrapper.remove();
+                            game.opponentHand.splice(game.opponentHand.indexOf(game.opponentHand[0]), 1)
+                            updateInventoryPlayability();
+                        }
+                    }
+                    break;
+                case 3:
+                    const color = game.opponentHand[0].color;
+                    for (const secondCard of game.opponentHand) {
+                        if (secondCard.color === color) {
+                            game.discarded.unshift(game.opponentHand[0]);
+                            game.opponentHand[0].wrapper.remove();
+                            game.opponentHand.splice(game.opponentHand.indexOf(game.opponentHand[0]), 1)
+                            updateInventoryPlayability();
+                        }
+                    }
+                    break;
+                case 4:
+                    (async () => {
+                        const placeholderDiv = document.createElement("div");
+                        placeholderDiv.classList.add("wrapper");
+                        document.getElementsByClassName("cardRack")[0].appendChild(placeholderDiv)
+                        setTimeout(() => placeholderDiv.remove(), 200)
+                        await game.animateElementMovement(game.pickupCard.element, placeholderDiv, game.pickupCard.wrapper)
+                        const pickupCard = game.pickupCard
+                        game.addToRack(game.pickupCard)
+                        if (pickupCard.color === card.color) return;
+                        for (let i = 0; i < 25; i++) {
+                            const newCard = new Card();
+                            this.addToRack(newCard);
+                            if (newCard.color === card.color) return;
+                        }
+                    })();
+                case 5:
+                    const playersHand = Array.from(game.inventory);
+                    const opponentHand = Array.from(game.opponentHand);
+                    game.inventory.length = 0;
+                    for (const card of opponentHand) game.inventory.push(card);
+                    game.opponentHand.length = 0;
+                    for (const card of playersHand) game.opponentHand.push(card);
+                    this.updateHands();
+                    break;
+                case 6:
+                    break;
+                case 7:
+                    const highestPlayer = Array.from(game.inventory).sort((a, b) => b.number?.value ?? -1 - (a.number?.value ?? -1))[0]
+                    const highestOpponent = Array.from(game.opponentHand).sort((a, b) => b.number?.value ?? -1 - (a.number?.value ?? -1))[0]
+                    if ((highestPlayer.number?.value ?? -1) >= (highestOpponent.number?.value ?? -1)) {
+                        game.discarded.unshift(highestPlayer);
+                        game.inventory.splice(game.inventory.indexOf(highestPlayer), 1)
+                        updateInventoryPlayability();
+                        highestPlayer.wrapper.remove();
+                    } else {
+                        game.discarded.unshift(highestOpponent);
+                        game.opponentHand.splice(game.opponentHand.indexOf(highestOpponent), 1)
+                        updateInventoryPlayability();
+                        highestOpponent.wrapper.remove();
+                    }
+                    break;
+                case 8:
+                    if (Math.random() > 0.5) {
+                        game.discarded.unshift(game.inventory[0]);
+                        game.inventory[0].wrapper.remove();
+                        game.inventory.splice(game.inventory.indexOf(game.inventory[0]), 1)
+                        updateInventoryPlayability();
+                    } else {
+                        game.discarded.unshift(game.opponentHand[0]);
+                        game.opponentHand[0].wrapper.remove();
+                        game.opponentHand.splice(game.opponentHand.indexOf(game.opponentHand[0]), 1)
+                        updateInventoryPlayability();
+                    }
+            }
         }
     }
     updateHands () {

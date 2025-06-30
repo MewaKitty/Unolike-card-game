@@ -1,0 +1,62 @@
+[
+    {
+        "name": "+2",
+        "draw": 2
+    },
+    {
+        "name": "+5",
+        "draw": 5
+    },
+    {
+        "name": "Skip",
+        "actionId": "skip"
+    },
+    {
+        "name": "+2",
+        "draw": 2,
+        "wild": true
+    },
+    {
+        "name": "+4",
+        "draw": 4,
+        "wild": true
+    },
+    {
+        "name": "Blank",
+        "wild": true,
+        "weight": 2
+    },
+    {
+        "name": "Swap hands",
+        "wild": true,
+        "actionId": "swap",
+        "weight": 0.2
+    },
+    {
+        "name": "Shuffle hands",
+        "wild": true,
+        "actionId": "shuffle",
+        "weight": 0.2
+    },
+    {
+        "name": "50",
+        "value": 50,
+        "color": "Gray",
+        "weight": 0.5,
+        "description": "50% +4 to you or opponent",
+        "actionId": "50"
+    },
+    {
+        "name": "Discard all same color",
+        "actionId": "discardAll"
+    },
+    {
+        "name": "Add 10 pressure",
+        "actionId": "x10",
+        "wild": true
+    },
+    {
+        "name": "Draw color",
+        "actionId": "drawColor"
+    }
+]

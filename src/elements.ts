@@ -55,4 +55,9 @@ const drawAmountText = document.createElement("span");
 drawAmountText.classList.add("drawAmountText")
 app.appendChild(drawAmountText);
 
+const pressureCount = document.createElement("span");
+pressureCount.classList.add("pressureCount")
+pressureCount.textContent = "Pressure: 1/10";
+app.appendChild(pressureCount);
+
 setupDragging();

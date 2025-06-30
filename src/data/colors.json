@@ -1,7 +1,7 @@
 [
     {
         "name": "Red",
-        "color": "#ffaaaa"
+        "color": "#ff9f9f"
     },
     {
         "name": "Green",
@@ -16,9 +16,25 @@
         "color": "#aaaaff"
     },
     {
+        "name": "Orange",
+        "color": "#ff9f00"
+    },
+    {
+        "name": "Purple",
+        "color": "#dd66dd"
+    },
+    {
+        "name": "Pink",
+        "color": "#ffdddd"
+    },
+    {
         "name": "Black",
         "color": "#333",
         "text": "#fff",
         "wild": true
+    },
+    {
+        "name": "Gray",
+        "color": "#bbb"
     }
 ]

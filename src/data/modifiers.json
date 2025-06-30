@@ -1,0 +1,14 @@
+[
+    {
+        "name": "Add 2 pressure",
+        "actionId": "x2"
+    },
+    {
+        "name": "Draw 1 card",
+        "draw": 1
+    },
+    {
+        "name": "Random occurance",
+        "actionId": "randomOccurance"
+    }
+]

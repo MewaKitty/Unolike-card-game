@@ -36,6 +36,7 @@
   border: 1px solid #333;
   display: flex;
   gap: 1rem;
+  overflow-x: scroll;
 }
 
 .pickupPile {
@@ -79,9 +80,17 @@
   top: 0;
   right: 0;
   display: flex;
-  padding: 2rem;
+  padding: 1rem;
   background: #ccc;
   border-bottom-left-radius: 1rem;
+}
+
+.opponentHand .cardWrapper {
+  margin-right: -3rem;
+}
+
+.opponentHand .cardWrapper:last-child {
+  margin-right: 0;
 }
 
 .cardDiscard .card {
@@ -103,4 +112,12 @@ div.selectedCard {
   left: 10vw;
   font-weight: bold;
   font-size: 3rem;
+}
+
+.pressureCount {
+  position: absolute;
+  bottom: 35vh;
+  right: 1vw;
+  font-weight: bolder;
+  font-size: 1.5;
 }

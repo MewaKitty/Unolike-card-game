@@ -1,0 +1,27 @@
+
+.card {
+  display: flex;
+  padding: 1rem;
+  background: var(--color);
+  width: fit-content;
+  height: 9rem;
+  width: 6rem;
+  border: 2px solid #333;
+  border-radius: .5rem;
+  cursor: pointer;
+  box-sizing: border-box;
+  --translateY: 0;
+  transition: left 80ms, top 80ms, opacity 160ms;
+  flex-direction: column;
+}
+
+.cardWrapper {
+  height: 9rem;
+  width: 6rem;
+  user-select: none;
+  transition: outline 160ms;
+}
+
+.cardDescriptionSpan, .cardModifierSpan {
+  font-size: 0.8rem;
+}

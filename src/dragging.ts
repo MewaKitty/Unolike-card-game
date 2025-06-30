@@ -55,15 +55,16 @@ export const setupDragging = () => {
                 && e.pageX < destination.getBoundingClientRect().x + destination.getBoundingClientRect().width
                 && e.pageY < destination.getBoundingClientRect().y + destination.getBoundingClientRect().height) {
                 if (!draggedCard.tags.includes("pickup") && destination === cardDiscard) {
+                    let skip = false;
                     if (game.selectedCards.includes(draggedCard)) {
                         for (const card of game.selectedCards) card.element.classList.remove("selectedCard");
                         for (const card of game.selectedCards.filter(card => card !== draggedCard)) game.discardCard(card);
-                        game.discardCard(draggedCard);
+                        if (game.discardCard(draggedCard)) skip = true;
                         game.selectedCards.length = 0;
                     } else {
-                        game.discardCard(draggedCard);
+                        if (game.discardCard(draggedCard)) skip = true;
                     };
-                    if (draggedCard.number.actionId !== "skip") game.opponentTurn();
+                    if (draggedCard.number.actionId !== "skip" && !skip) game.opponentTurn();
                     updateInventoryPlayability();
                 }
                 if (destination === cardRack) {

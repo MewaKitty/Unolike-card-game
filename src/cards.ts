@@ -3,6 +3,7 @@ import { game, updateInventoryPlayability } from "./game.ts";
 import colorData from "./data/colors.json";
 import numberData from "./data/numbers.json";
 import symbolData from "./data/symbols.json";
+import modifierData from "./data/modifiers.json";
 import { dragGap, dragGaps, setDraggedCard } from "./dragging.ts";
 
 interface CardColor {
@@ -16,7 +17,15 @@ interface CardNumber {
   name: string,
   value?: number,
   draw?: number,
-  actionId?: string
+  actionId?: string,
+  color?: string,
+  description?: string
+}
+
+interface CardModifier {
+  name: string,
+  actionId?: string,
+  draw?: number
 }
 
 export class Card {
@@ -26,13 +35,16 @@ export class Card {
   wrapper: HTMLDivElement
   hidden: boolean
   tags: string[]
+  modifier: CardModifier | null
   constructor (hidden?: boolean, tags?: string[]) {
-    const isWild = Math.random() > 0.5;
+    const isWild = Math.random() > 0.9;
     this.color = random(colorData.filter(color => isWild ? color.wild : !color.wild));
     const isSymbol = this.color.wild ? true : Math.random() > 0.7;
     this.number = isSymbol ? weightedRandom(symbolData.filter(symbol => symbol.wild === this.color.wild)) : random(numberData);
+    if (this.number.color) this.color = colorData.find(color => color.name === this.number.color)!;
     this.hidden = hidden ?? false;
     this.tags = tags ?? [];
+    this.modifier = Math.random() > 0.0 ? weightedRandom(modifierData) : null
 
     const wrapper = document.createElement("div");
     wrapper.classList.add("cardWrapper");
@@ -92,7 +104,22 @@ export class Card {
     const div = this.element;
     div.classList.add("card");
     div.style = `--color: ${this.color.color}; color: ${this.color.text ?? "#333"}`;
-    div.textContent = this.number.name;
+    div.textContent = "";
+    const cardNameSpan = document.createElement("span");
+    cardNameSpan.textContent = this.number.name;
+    div.appendChild(cardNameSpan);
+    if (this.number.description) {
+      const cardDescriptionSpan = document.createElement("span");
+      cardDescriptionSpan.classList.add("cardDescriptionSpan");
+      cardDescriptionSpan.textContent = this.number.description;
+      div.appendChild(cardDescriptionSpan);
+    }
+    if (this.modifier) {
+      const cardModifierSpan = document.createElement("span");
+      cardModifierSpan.classList.add("cardModifierSpan");
+      cardModifierSpan.textContent = "+ " + this.modifier.name;
+      div.appendChild(cardModifierSpan);
+    }
     if (this.hidden) div.style = `--color: #fff; color: black;`;
     if (this.hidden) div.textContent = `Card`;
   }
@@ -105,7 +132,7 @@ export class Card {
   }
   isPlayable () {
     if (game.selectedCards.length > 0) return this.number === game.selectedCards[0].number;
-    if (game.drawAmount) return this.number.draw !== undefined && this.number.draw !== null;
+    if (game.drawAmount) return this.number.draw !== undefined && this.number.draw !== null && this.modifier?.draw !== undefined && this.modifier?.draw !== null;
     if (game.playersTurn === false) return false;
     return this.playableOn(game.discarded.at(-1)!);
   }
