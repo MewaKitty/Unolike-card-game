@@ -1,5 +1,6 @@
 import { game, updateInventoryPlayability } from "./game.ts";
 import { setupDragging } from "./dragging.ts";
+import { Card } from "./cards.ts";
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 
@@ -27,12 +28,20 @@ pickupLabel.textContent = "Pick up here";
 pickupPile.appendChild((game.pickupCard).wrapper)
 app.appendChild(pickupPile);
 pickupPile.addEventListener("click", async () => {
+    if (!game.playersTurn) return;
+    game.playersTurn = false;
     const placeholderDiv = document.createElement("div");
     placeholderDiv.classList.add("wrapper");
     cardRack.appendChild(placeholderDiv)
     setTimeout(() => placeholderDiv.remove(), 200)
     await game.animateElementMovement(game.pickupCard.element, placeholderDiv, game.pickupCard.wrapper)
     game.addToRack(game.pickupCard)
+    for (let i = 0; i < game.drawAmount - 1; i++) {
+        game.addToRack(new Card())
+    }
+    game.drawAmount = 0;
+    document.getElementsByClassName("drawAmountText")[0].textContent = "";
+    game.opponentTurn();
 })
 
 const opponentHand = document.createElement("div");
@@ -41,5 +50,9 @@ for (const card of game.opponentHand) {
     opponentHand.appendChild(card.wrapper);
 }
 app.appendChild(opponentHand);
+
+const drawAmountText = document.createElement("span");
+drawAmountText.classList.add("drawAmountText")
+app.appendChild(drawAmountText);
 
 setupDragging();

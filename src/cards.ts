@@ -1,17 +1,22 @@
-import { random } from "./utils.ts";
+import { random, weightedRandom } from "./utils.ts";
 import { game, updateInventoryPlayability } from "./game.ts";
 import colorData from "./data/colors.json";
 import numberData from "./data/numbers.json";
+import symbolData from "./data/symbols.json";
 import { dragGap, dragGaps, setDraggedCard } from "./dragging.ts";
 
 interface CardColor {
   name: string,
-  color: string
+  color: string,
+  text?: string,
+  wild?: boolean
 }
 
 interface CardNumber {
   name: string,
-  value: number
+  value?: number,
+  draw?: number,
+  actionId?: string
 }
 
 export class Card {
@@ -22,8 +27,10 @@ export class Card {
   hidden: boolean
   tags: string[]
   constructor (hidden?: boolean, tags?: string[]) {
-    this.number = random(numberData);
-    this.color = random(colorData);
+    const isWild = Math.random() > 0.5;
+    this.color = random(colorData.filter(color => isWild ? color.wild : !color.wild));
+    const isSymbol = this.color.wild ? true : Math.random() > 0.7;
+    this.number = isSymbol ? weightedRandom(symbolData.filter(symbol => symbol.wild === this.color.wild)) : random(numberData);
     this.hidden = hidden ?? false;
     this.tags = tags ?? [];
 
@@ -39,6 +46,7 @@ export class Card {
       if (!this.tags.includes("pickup") && !this.isPlayable()) return;
       if (this.tags.includes("discarded")) return;
       if (!this.tags.includes("pickup") && wrapper.parentElement !== document.getElementsByClassName("cardRack")[0]) return;
+      if (!game.playersTurn) return;
       pointerDownTime = Date.now();
       dragGap.x = e.pageX - div.getBoundingClientRect().left;
       dragGap.y = e.pageY - div.getBoundingClientRect().top;
@@ -83,18 +91,22 @@ export class Card {
   updateElement () {
     const div = this.element;
     div.classList.add("card");
-    div.style = `--color: ${this.color.color}`;
+    div.style = `--color: ${this.color.color}; color: ${this.color.text ?? "#333"}`;
     div.textContent = this.number.name;
-    if (this.hidden) div.style = `--color: #333; color: white;`;
+    if (this.hidden) div.style = `--color: #fff; color: black;`;
     if (this.hidden) div.textContent = `Card`;
   }
   playableOn (card: Card) {
     if (card.number === this.number) return true;
     if (card.color === this.color) return true;
+    if (this.color.wild) return true;
+    if (card.color.wild) return true;
     return false;
   }
   isPlayable () {
     if (game.selectedCards.length > 0) return this.number === game.selectedCards[0].number;
+    if (game.drawAmount) return this.number.draw !== undefined && this.number.draw !== null;
+    if (game.playersTurn === false) return false;
     return this.playableOn(game.discarded.at(-1)!);
   }
 }

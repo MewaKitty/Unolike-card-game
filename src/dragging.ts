@@ -1,5 +1,5 @@
 import { Card } from "./cards.ts";
-import { game } from "./game.ts";
+import { game, updateInventoryPlayability } from "./game.ts";
 
 let draggedCard: Card | null = null;
 export let dragGap: { x: number, y: number } = { x: -1, y: -1 };
@@ -63,10 +63,19 @@ export const setupDragging = () => {
                     } else {
                         game.discardCard(draggedCard);
                     };
-                    game.opponentTurn();
+                    if (draggedCard.number.actionId !== "skip") game.opponentTurn();
+                    updateInventoryPlayability();
                 }
                 if (destination === cardRack) {
-                    if (!game.inventory.includes(draggedCard)) game.addToRack(draggedCard);
+                    if (!game.inventory.includes(draggedCard)) {
+                        game.addToRack(draggedCard);
+                        for (let i = 0; i < game.drawAmount - 1; i++) {
+                            game.addToRack(new Card())
+                        }
+                        game.drawAmount = 0;
+                        document.getElementsByClassName("drawAmountText")[0].textContent = "";
+                        game.opponentTurn();
+                    };
                 }
             }
             destination.classList.remove("dragTarget")
