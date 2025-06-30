@@ -1,38 +1,61 @@
 import { Card } from "./cards.ts";
-import { shuffleArray, randomInteger } from "./utils.ts";
+import { random, shuffleArray, randomInteger } from "./utils.ts";
 
 export const discardedCards: Card[] = []
 
 export class Game {
     inventory: Card[];
-    discarded: Card[];
+    discarded: Card[][];
     opponentHand: Card[];
     pickupCard: Card;
     selectedCards: Card[];
     drawAmount: number;
+    drawPile: number;
     playersTurn: boolean;
     pressureAmount: number;
-    constructor () {
+    closedPile: number;
+    constructor() {
         this.inventory = [];
         this.opponentHand = [];
         for (let i = 0; i < 7; i++) {
             this.inventory.push(new Card())
             this.opponentHand.push(new Card(true))
         }
-        this.discarded = [new Card(false, ["discarded"])];
+        this.discarded = [
+            [new Card(false, ["discarded"])],
+            [new Card(false, ["discarded"])],
+            [new Card(false, ["discarded"])],
+            [new Card(false, ["discarded"])]
+        ];
         this.pickupCard = new Card(true, ["pickup"]);
         this.selectedCards = [];
         this.drawAmount = 0;
+        this.drawPile = -1;
         this.playersTurn = true;
         this.pressureAmount = 1;
+        this.closedPile = randomInteger(0, 3);
     }
-    updateCardDiscard () {
-        const cardDiscard = document.getElementsByClassName("cardDiscard")[0];
-        cardDiscard.textContent = "";
-        cardDiscard.appendChild(this.discarded.at(-1)!.wrapper)
-        if (!this.discarded.at(-1)?.tags.includes("discarded")) this.discarded.at(-1)?.tags.push("discarded")
+    updateCardDiscard() {
+        for (let i = 0; i < 4; i++) {
+            const cardDiscard = document.getElementsByClassName("cardDiscard" + i)[0];
+            cardDiscard.textContent = "";
+            cardDiscard.appendChild(this.discarded[i].at(-1)!.wrapper)
+            console.log(i)
+            console.log(this.discarded[i])
+            if (!this.discarded[i].at(-1)?.tags.includes("discarded")) this.discarded[i].at(-1)?.tags.push("discarded")
+            if (i === game.closedPile) {
+                cardDiscard.classList.add("closed");
+            } else {
+                cardDiscard.classList.remove("closed");
+            }
+            if (i === game.drawPile && game.drawAmount > 0) {
+                cardDiscard.classList.add("drawPile");
+            } else {
+                cardDiscard.classList.remove("drawPile");
+            }
+        }
     }
-    animateElementMovement (element: HTMLElement, destination: HTMLElement, parent: Element) {
+    animateElementMovement(element: HTMLElement, destination: HTMLElement, parent: Element) {
         return new Promise(res => {
             element.style.position = "fixed";
             element.style.left = element.getBoundingClientRect().left + "px";
@@ -50,41 +73,77 @@ export class Game {
             }, 100)
         });
     }
-    async opponentTurn () {
+    async opponentTurn() {
         this.playersTurn = false;
+        this.closedPile = randomInteger(0, 3);
         updateInventoryPlayability();
+        this.updateCardDiscard();
         for (const card of game.selectedCards) card.element.classList.remove("selectedCard");
         game.selectedCards.length = 0;
         if (game.drawAmount > 0) {
             for (const card of this.opponentHand) {
-                if (!card.playableOn(this.discarded.at(-1)!)) continue;
+                if (card.playablePiles(true).length === 0) continue;
                 if (!card.number.draw) continue;
                 await this.opponentDiscard(card);
                 this.playersTurn = true;
+                this.closedPile = randomInteger(0, 3);
+                updateInventoryPlayability();
+                this.updateCardDiscard();
+                this.endOpponentTurn();
                 return;
             }
             for (let i = 0; i < game.drawAmount; i++) this.opponentPickup();
             game.drawAmount = 0;
+            game.drawPile = -1;
             document.getElementsByClassName("drawAmountText")[0].textContent = "";
             this.playersTurn = true;
+            this.closedPile = randomInteger(0, 3);
             updateInventoryPlayability();
+            this.updateCardDiscard();
+            this.endOpponentTurn();
             return;
         }
-        for (const card of this.opponentHand.filter(card => card.number.actionId !== "swap")) {
-            if (card.playableOn(this.discarded.at(-1)!)) {
+        for (const card of this.opponentHand.filter(card => game.opponentHand.length <= game.inventory.length ? card.number.actionId !== "swap" : true)) {
+            console.log("playable", card.playablePiles())
+            if (card.playablePiles(true).length > 0) {
                 await this.opponentDiscard(card);
                 if (card.number.actionId === "skip") await this.opponentTurn();
                 this.playersTurn = true;
+                this.closedPile = randomInteger(0, 3);
                 updateInventoryPlayability();
+                this.updateCardDiscard();
+                this.endOpponentTurn();
                 return
             }
         }
         await this.opponentPickup();
         this.playersTurn = true;
+        this.closedPile = randomInteger(0, 3);
         updateInventoryPlayability();
+        this.updateCardDiscard();
+        this.endOpponentTurn();
     }
-    opponentDiscard (card: Card) {
-        this.discarded.push(card);
+    async endOpponentTurn () {
+        if (this.closedPile === this.drawPile) {
+            game.playersTurn = false;
+            const placeholderDiv = document.createElement("div");
+            placeholderDiv.classList.add("wrapper");
+            document.getElementsByClassName("cardRack")[0].appendChild(placeholderDiv)
+            setTimeout(() => placeholderDiv.remove(), 200)
+            await game.animateElementMovement(game.pickupCard.element, placeholderDiv, game.pickupCard.wrapper)
+            game.addToRack(game.pickupCard)
+            for (let i = 0; i < game.drawAmount - 1; i++) {
+                game.addToRack(new Card())
+            }
+            game.drawAmount = 0;
+            game.drawPile = -1;
+            document.getElementsByClassName("drawAmountText")[0].textContent = "";
+            game.opponentTurn();
+        }
+    }
+    opponentDiscard(card: Card) {
+        const pile: number = random(card.playablePiles(true));
+        this.discarded[pile].push(card);
         this.opponentHand.splice(this.opponentHand.indexOf(card), 1)
         card.hidden = false;
         card.tags.push("discarded")
@@ -99,16 +158,18 @@ export class Game {
         card.updateElement();
         if (card.number.draw) {
             game.drawAmount += card.number.draw;
+            game.drawPile = pile;
             document.getElementsByClassName("drawAmountText")[0].textContent = "+" + game.drawAmount;
         }
         if (card.modifier?.draw) {
             game.drawAmount += card.modifier?.draw;
+            game.drawPile = pile;
             document.getElementsByClassName("drawAmountText")[0].textContent = "+" + game.drawAmount;
         }
         updateInventoryPlayability();
         return new Promise(res => {
             setTimeout(() => {
-                const cardDiscard = document.getElementsByClassName("cardDiscard")[0].children[0];
+                const cardDiscard = document.getElementsByClassName("cardDiscard" + pile)[0].children[0];
                 card.wrapper.style.left = cardDiscard.getBoundingClientRect().left + "px";
                 card.wrapper.style.top = cardDiscard.getBoundingClientRect().top + "px";
                 placeholderDiv.style.width = "0";
@@ -117,13 +178,13 @@ export class Game {
                     placeholderDiv.remove();
                     cardDiscard.appendChild(card.wrapper);
                     this.updateCardDiscard();
-                    this.applyOpponentDiscardEffects(card);
+                    this.applyOpponentDiscardEffects(card, pile);
                     res(null);
                 }, 500)
             }, 100)
         })
     }
-    opponentPickup (): Promise<Card> {
+    opponentPickup(): Promise<Card> {
         const card = game.pickupCard;
         card.wrapper.style.position = "fixed";
         card.wrapper.style.left = card.wrapper.getBoundingClientRect().left + "px";
@@ -134,21 +195,21 @@ export class Game {
         document.getElementsByClassName("pickupPile")[0].appendChild(game.pickupCard.wrapper)
         updateInventoryPlayability();
         return new Promise(res => {
-        setTimeout(() => {
-            //for (const card of document.querySelectorAll(".pickupPile .cardWrapper")) card.remove();
-            const opponentHand = document.getElementsByClassName("opponentHand")[0];
-            card.wrapper.style.left = opponentHand.getBoundingClientRect().left + "px";
-            card.wrapper.style.top = opponentHand.getBoundingClientRect().top + "px";
             setTimeout(() => {
-                card.wrapper.style.position = "";
-                opponentHand.appendChild(card.wrapper);
-                game.opponentHand.push(card);
-                res(card);
-            }, 500)
-        }, 100)
+                //for (const card of document.querySelectorAll(".pickupPile .cardWrapper")) card.remove();
+                const opponentHand = document.getElementsByClassName("opponentHand")[0];
+                card.wrapper.style.left = opponentHand.getBoundingClientRect().left + "px";
+                card.wrapper.style.top = opponentHand.getBoundingClientRect().top + "px";
+                setTimeout(() => {
+                    card.wrapper.style.position = "";
+                    opponentHand.appendChild(card.wrapper);
+                    game.opponentHand.push(card);
+                    res(card);
+                }, 500)
+            }, 100)
         })
     }
-    addToRack (card: Card) {
+    addToRack(card: Card) {
         const cardRack = document.getElementsByClassName("cardRack")[0] as HTMLDivElement;
         const pickupPile = document.getElementsByClassName("pickupPile")[0] as HTMLDivElement;
         cardRack.appendChild(card.wrapper);
@@ -164,21 +225,24 @@ export class Game {
             pickupPile.appendChild(game.pickupCard.wrapper)
         }
     }
-    discardCard (card: Card) {
-        const cardDiscard = document.getElementsByClassName("cardDiscard")[0];
+    discardCard(card: Card, pile: number) {
+        const cardDiscard = document.getElementsByClassName("cardDiscard" + pile)[0];
         cardDiscard.textContent = "";
         cardDiscard.appendChild(card.wrapper)
-        game.discarded.push(card);
+        console.log(pile)
+        game.discarded[pile].push(card);
         game.inventory.splice(game.inventory.indexOf(card), 1)
         updateInventoryPlayability();
         game.updateCardDiscard();
         if (game.inventory.length === 0 || game.opponentHand.length === 0) return;
         if (card.number.draw) {
             game.drawAmount += card.number.draw;
+            game.drawPile = pile;
             document.getElementsByClassName("drawAmountText")[0].textContent = "+" + game.drawAmount;
         }
         if (card.modifier?.draw) {
             game.drawAmount += card.modifier?.draw;
+            game.drawPile = pile;
             document.getElementsByClassName("drawAmountText")[0].textContent = "+" + game.drawAmount;
         }
         if (card.number.actionId === "swap") {
@@ -204,10 +268,12 @@ export class Game {
         if (card.number.actionId === "50") {
             if (Math.random() > 0.5) {
                 game.drawAmount += 4;
+                game.drawPile = pile;
                 document.getElementsByClassName("drawAmountText")[0].textContent = "+" + game.drawAmount;
                 return true;
             } else {
                 game.drawAmount += 4;
+                game.drawPile = pile;
                 document.getElementsByClassName("drawAmountText")[0].textContent = "+" + game.drawAmount;
             }
         }
@@ -216,6 +282,7 @@ export class Game {
             if (game.pressureAmount >= 10) {
                 game.drawAmount += randomInteger(1, 10);
                 game.pressureAmount = 1;
+                game.drawPile = pile;
                 document.getElementsByClassName("drawAmountText")[0].textContent = "+" + game.drawAmount;
             }
             document.getElementsByClassName("pressureCount")[0].textContent = "Pressure: " + game.pressureAmount + "/10";
@@ -224,7 +291,7 @@ export class Game {
             console.log("inventory", game.inventory)
             for (const secondCard of game.inventory) {
                 if (secondCard.color !== card.color) continue;
-                game.discarded.unshift(secondCard);
+                game.discarded[pile].unshift(secondCard);
                 secondCard.wrapper.remove();
                 game.inventory.splice(game.inventory.indexOf(secondCard), 1)
                 updateInventoryPlayability();
@@ -235,6 +302,7 @@ export class Game {
         if (card.number?.actionId === "x10") {
             game.drawAmount += randomInteger(1, 10);
             game.pressureAmount = 1;
+            game.drawPile = pile;
             document.getElementsByClassName("drawAmountText")[0].textContent = "+" + game.drawAmount;
             document.getElementsByClassName("pressureCount")[0].textContent = "Pressure: " + game.pressureAmount + "/10";
         }
@@ -253,7 +321,7 @@ export class Game {
             switch (randomInteger(1, 8)) {
                 case 1:
                     while (game.inventory.length > 2) {
-                        game.discarded.unshift(game.inventory[0]);
+                        game.discarded[pile].unshift(game.inventory[0]);
                         game.inventory[0].wrapper.remove();
                         game.inventory.splice(game.inventory.indexOf(game.inventory[0]), 1)
                         updateInventoryPlayability();
@@ -263,7 +331,7 @@ export class Game {
                     const number = game.inventory[0].number;
                     for (const secondCard of game.inventory) {
                         if (secondCard.number === number) {
-                            game.discarded.unshift(game.inventory[0]);
+                            game.discarded[pile].unshift(game.inventory[0]);
                             game.inventory[0].wrapper.remove();
                             game.inventory.splice(game.inventory.indexOf(game.inventory[0]), 1)
                             updateInventoryPlayability();
@@ -274,7 +342,7 @@ export class Game {
                     const color = game.inventory[0].color;
                     for (const secondCard of game.inventory) {
                         if (secondCard.color === color) {
-                            game.discarded.unshift(game.inventory[0]);
+                            game.discarded[pile].unshift(game.inventory[0]);
                             game.inventory[0].wrapper.remove();
                             game.inventory.splice(game.inventory.indexOf(game.inventory[0]), 1)
                             updateInventoryPlayability();
@@ -306,12 +374,12 @@ export class Game {
                     const highestPlayer = Array.from(game.inventory).sort((a, b) => b.number?.value ?? -1 - (a.number?.value ?? -1))[0]
                     const highestOpponent = Array.from(game.opponentHand).sort((a, b) => b.number?.value ?? -1 - (a.number?.value ?? -1))[0]
                     if ((highestPlayer.number?.value ?? -1) > (highestOpponent.number?.value ?? -1)) {
-                        game.discarded.unshift(highestPlayer);
+                        game.discarded[pile].unshift(highestPlayer);
                         game.inventory.splice(game.inventory.indexOf(highestPlayer), 1)
                         updateInventoryPlayability();
                         highestPlayer.wrapper.remove();
                     } else {
-                        game.discarded.unshift(highestOpponent);
+                        game.discarded[pile].unshift(highestOpponent);
                         game.opponentHand.splice(game.opponentHand.indexOf(highestOpponent), 1)
                         updateInventoryPlayability();
                         highestOpponent.wrapper.remove();
@@ -319,12 +387,12 @@ export class Game {
                     break;
                 case 8:
                     if (Math.random() > 0.5) {
-                        game.discarded.unshift(game.inventory[0]);
+                        game.discarded[pile].unshift(game.inventory[0]);
                         game.inventory[0].wrapper.remove();
                         game.inventory.splice(game.inventory.indexOf(game.inventory[0]), 1)
                         updateInventoryPlayability();
                     } else {
-                        game.discarded.unshift(game.opponentHand[0]);
+                        game.discarded[pile].unshift(game.opponentHand[0]);
                         game.opponentHand[0].wrapper.remove();
                         game.opponentHand.splice(game.opponentHand.indexOf(game.opponentHand[0]), 1)
                         updateInventoryPlayability();
@@ -332,7 +400,7 @@ export class Game {
             }
         }
     }
-    applyOpponentDiscardEffects (card: Card) {
+    applyOpponentDiscardEffects(card: Card, pile: number) {
         if (game.inventory.length === 0 || game.opponentHand.length === 0) return;
         if (card.number.actionId === "swap") {
             const playersHand = Array.from(game.inventory);
@@ -357,10 +425,12 @@ export class Game {
         if (card.number.actionId === "50") {
             if (Math.random() > 0.5) {
                 game.drawAmount += 4;
+                game.drawPile = pile;
                 document.getElementsByClassName("drawAmountText")[0].textContent = "+" + game.drawAmount;
                 game.opponentTurn();
             } else {
                 game.drawAmount += 4;
+                game.drawPile = pile;
                 document.getElementsByClassName("drawAmountText")[0].textContent = "+" + game.drawAmount;
             }
         }
@@ -369,6 +439,7 @@ export class Game {
             if (game.pressureAmount >= 10) {
                 game.drawAmount += randomInteger(1, 10);
                 game.pressureAmount = 1;
+                game.drawPile = pile;
                 document.getElementsByClassName("drawAmountText")[0].textContent = "+" + game.drawAmount;
             }
             document.getElementsByClassName("pressureCount")[0].textContent = "Pressure: " + game.pressureAmount + "/10";
@@ -376,7 +447,7 @@ export class Game {
         if (card.number.actionId === "discardAll") {
             for (const secondCard of game.opponentHand) {
                 if (secondCard.color !== card.color) continue;
-                game.discarded.unshift(secondCard);
+                game.discarded[pile].unshift(secondCard);
                 secondCard.wrapper.remove();
                 game.opponentHand.splice(game.opponentHand.indexOf(secondCard), 1)
                 updateInventoryPlayability();
@@ -385,6 +456,7 @@ export class Game {
         if (card.number?.actionId === "x10") {
             game.drawAmount += randomInteger(1, 10);
             game.pressureAmount = 1;
+            game.drawPile = pile;
             document.getElementsByClassName("drawAmountText")[0].textContent = "+" + game.drawAmount;
             document.getElementsByClassName("pressureCount")[0].textContent = "Pressure: " + game.pressureAmount + "/10";
         }
@@ -409,7 +481,7 @@ export class Game {
             switch (randomInteger(1, 8)) {
                 case 1:
                     while (game.opponentHand.length > 2) {
-                        game.discarded.unshift(game.opponentHand[0]);
+                        game.discarded[pile].unshift(game.opponentHand[0]);
                         game.opponentHand[0].wrapper.remove();
                         game.opponentHand.splice(game.opponentHand.indexOf(game.opponentHand[0]), 1)
                         updateInventoryPlayability();
@@ -419,7 +491,7 @@ export class Game {
                     const number = game.opponentHand[0].number;
                     for (const secondCard of game.opponentHand) {
                         if (secondCard.number === number) {
-                            game.discarded.unshift(game.opponentHand[0]);
+                            game.discarded[pile].unshift(game.opponentHand[0]);
                             game.opponentHand[0].wrapper.remove();
                             game.opponentHand.splice(game.opponentHand.indexOf(game.opponentHand[0]), 1)
                             updateInventoryPlayability();
@@ -430,7 +502,7 @@ export class Game {
                     const color = game.opponentHand[0].color;
                     for (const secondCard of game.opponentHand) {
                         if (secondCard.color === color) {
-                            game.discarded.unshift(game.opponentHand[0]);
+                            game.discarded[pile].unshift(game.opponentHand[0]);
                             game.opponentHand[0].wrapper.remove();
                             game.opponentHand.splice(game.opponentHand.indexOf(game.opponentHand[0]), 1)
                             updateInventoryPlayability();
@@ -453,6 +525,7 @@ export class Game {
                             if (newCard.color === card.color) return;
                         }
                     })();
+                    break;
                 case 5:
                     const playersHand = Array.from(game.inventory);
                     const opponentHand = Array.from(game.opponentHand);
@@ -468,12 +541,12 @@ export class Game {
                     const highestPlayer = Array.from(game.inventory).sort((a, b) => b.number?.value ?? -1 - (a.number?.value ?? -1))[0]
                     const highestOpponent = Array.from(game.opponentHand).sort((a, b) => b.number?.value ?? -1 - (a.number?.value ?? -1))[0]
                     if ((highestPlayer.number?.value ?? -1) >= (highestOpponent.number?.value ?? -1)) {
-                        game.discarded.unshift(highestPlayer);
+                        game.discarded[pile].unshift(highestPlayer);
                         game.inventory.splice(game.inventory.indexOf(highestPlayer), 1)
                         updateInventoryPlayability();
                         highestPlayer.wrapper.remove();
                     } else {
-                        game.discarded.unshift(highestOpponent);
+                        game.discarded[pile].unshift(highestOpponent);
                         game.opponentHand.splice(game.opponentHand.indexOf(highestOpponent), 1)
                         updateInventoryPlayability();
                         highestOpponent.wrapper.remove();
@@ -481,12 +554,12 @@ export class Game {
                     break;
                 case 8:
                     if (Math.random() > 0.5) {
-                        game.discarded.unshift(game.inventory[0]);
+                        game.discarded[pile].unshift(game.inventory[0]);
                         game.inventory[0].wrapper.remove();
                         game.inventory.splice(game.inventory.indexOf(game.inventory[0]), 1)
                         updateInventoryPlayability();
                     } else {
-                        game.discarded.unshift(game.opponentHand[0]);
+                        game.discarded[pile].unshift(game.opponentHand[0]);
                         game.opponentHand[0].wrapper.remove();
                         game.opponentHand.splice(game.opponentHand.indexOf(game.opponentHand[0]), 1)
                         updateInventoryPlayability();
@@ -494,7 +567,7 @@ export class Game {
             }
         }
     }
-    updateHands () {
+    updateHands() {
         const cardRack = document.getElementsByClassName("cardRack")[0];
         cardRack.textContent = "";
         console.log("inventory");
@@ -509,6 +582,7 @@ export class Game {
         const opponentHand = document.getElementsByClassName("opponentHand")[0];
         opponentHand.textContent = "";
         for (const card of game.opponentHand) {
+            card.wrapper.classList.remove("unplayable");
             opponentHand.appendChild(card.wrapper)
         }
     }
@@ -516,8 +590,9 @@ export class Game {
 export const game = new Game();
 
 export const updateInventoryPlayability = () => {
+    console.log("playability")
     for (const card of game.inventory) {
-        if (card.isPlayable()) {
+        if (card.playablePiles().length > 0) {
             card.element.classList.remove("unplayable")
         } else {
             card.element.classList.add("unplayable")

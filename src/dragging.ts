@@ -7,7 +7,6 @@ export const dragGaps: {x: number, y: number}[] = [];
 export const setDraggedCard = (card: Card) => draggedCard = card;
 
 export const setupDragging = () => {
-    const cardDiscard = document.getElementsByClassName("cardDiscard")[0];
     const cardRack = document.getElementsByClassName("cardRack")[0];
     document.body.addEventListener("pointermove", e => {
         if (!draggedCard) return;
@@ -36,6 +35,8 @@ export const setupDragging = () => {
                 && e.pageY > destination.getBoundingClientRect().y
                 && e.pageX < destination.getBoundingClientRect().x + destination.getBoundingClientRect().width
                 && e.pageY < destination.getBoundingClientRect().y + destination.getBoundingClientRect().height) {
+                const pile = +(destination as HTMLDivElement).dataset.index!;
+                if (destination.classList.contains("cardDiscard") && !draggedCard.playablePiles().includes(pile)) return;
                 destination.classList.add("dragTarget")
             } else {
                 destination.classList.remove("dragTarget")
@@ -44,6 +45,12 @@ export const setupDragging = () => {
     })
 
     document.body.addEventListener("pointerup", e => {
+        if (game.selectedCards.length === 0) {
+            for (let i = 0; i < 4; i++) {
+                const cardDiscard = document.getElementsByClassName("cardDiscard" + i)[0];
+                cardDiscard.classList.remove("unplayable")
+            }
+        }
         if (!draggedCard) return;
         draggedCard.element.classList.remove("dragging");
         draggedCard.element.style.left = "";
@@ -54,15 +61,17 @@ export const setupDragging = () => {
                 && e.pageY > destination.getBoundingClientRect().y
                 && e.pageX < destination.getBoundingClientRect().x + destination.getBoundingClientRect().width
                 && e.pageY < destination.getBoundingClientRect().y + destination.getBoundingClientRect().height) {
-                if (!draggedCard.tags.includes("pickup") && destination === cardDiscard) {
+                if (!draggedCard.tags.includes("pickup") && destination.classList.contains("cardDiscard")) {
+                    const pile = +(destination as HTMLDivElement).dataset.index!;
+                    if (destination.classList.contains("cardDiscard") && !draggedCard.playablePiles().includes(pile)) return;
                     let skip = false;
                     if (game.selectedCards.includes(draggedCard)) {
                         for (const card of game.selectedCards) card.element.classList.remove("selectedCard");
-                        for (const card of game.selectedCards.filter(card => card !== draggedCard)) game.discardCard(card);
-                        if (game.discardCard(draggedCard)) skip = true;
+                        for (const card of game.selectedCards.filter(card => card !== draggedCard)) game.discardCard(card, pile);
+                        if (game.discardCard(draggedCard, pile)) skip = true;
                         game.selectedCards.length = 0;
                     } else {
-                        if (game.discardCard(draggedCard)) skip = true;
+                        if (game.discardCard(draggedCard, pile)) skip = true;
                     };
                     if (draggedCard.number.actionId !== "skip" && !skip) game.opponentTurn();
                     updateInventoryPlayability();

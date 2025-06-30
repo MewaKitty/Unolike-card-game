@@ -44,7 +44,7 @@ export class Card {
     if (this.number.color) this.color = colorData.find(color => color.name === this.number.color)!;
     this.hidden = hidden ?? false;
     this.tags = tags ?? [];
-    this.modifier = Math.random() > 0.0 ? weightedRandom(modifierData) : null
+    this.modifier = Math.random() > 0.7 ? weightedRandom(modifierData) : null
 
     const wrapper = document.createElement("div");
     wrapper.classList.add("cardWrapper");
@@ -55,7 +55,7 @@ export class Card {
     this.wrapper = wrapper;
     let pointerDownTime = 0;
     div.addEventListener("pointerdown", e => {
-      if (!this.tags.includes("pickup") && !this.isPlayable()) return;
+      if (!this.tags.includes("pickup") && this.playablePiles().length === 0) return;
       if (this.tags.includes("discarded")) return;
       if (!this.tags.includes("pickup") && wrapper.parentElement !== document.getElementsByClassName("cardRack")[0]) return;
       if (!game.playersTurn) return;
@@ -67,19 +67,25 @@ export class Card {
       div.classList.add("dragging")
       setDraggedCard(this);
       for (const card of game.selectedCards) {
-        //card.element.classList.add("dragging");
         dragGaps.push({
           x: e.pageX - card.element.getBoundingClientRect().left,
           y: e.pageY - card.element.getBoundingClientRect().top
         });
-        /*
-        card.element.style.left = card.element.getBoundingClientRect().left + "px";
-        card.element.style.top = card.element.getBoundingClientRect().top + "px";*/
+      }
+      const piles = game.selectedCards.length > 1 && game.selectedCards.includes(this) ? game.selectedCards.filter(card => card !== this).map(card => card.playablePiles()).flat() : this.playablePiles();
+      for (let i = 0; i < 4; i++) {
+        const cardDiscard = document.getElementsByClassName("cardDiscard" + i)[0];
+        if (piles.includes(i)) {
+          cardDiscard.classList.remove("unplayable")
+        } else {
+          cardDiscard.classList.add("unplayable")
+        }
+        if (i === game.closedPile) cardDiscard.classList.add("unplayable");
       }
     })
     wrapper.addEventListener("pointerup", async () => {
       if (Date.now() - pointerDownTime > 350) return;
-      if (!this.tags.includes("pickup") && !this.isPlayable()) return;
+      if (!this.tags.includes("pickup") && this.playablePiles().length === 0) return;
       if (!game.inventory.includes(this)) return;
       if (this.tags.includes("discarded")) return;
       if (div.classList.contains("selectedCard")) {
@@ -90,14 +96,6 @@ export class Card {
         game.selectedCards.push(this);
       }
       updateInventoryPlayability();
-      /*
-      if (wrapper.parentElement !== document.getElementsByClassName("cardRack")[0]) return;
-      game.discarded.push(this);
-      game.inventory.splice(game.inventory.indexOf(this), 1)
-      this.wrapper.classList.add("dragging");
-      await game.animateElementMovement(this.wrapper, document.getElementsByClassName("cardDiscard")[0].children[0] as HTMLElement, document.getElementsByClassName("cardDiscard")[0])
-      this.wrapper.classList.remove("dragging")
-      await game.opponentTurn();*/
     })
   }
   updateElement () {
@@ -130,10 +128,16 @@ export class Card {
     if (card.color.wild) return true;
     return false;
   }
-  isPlayable () {
-    if (game.selectedCards.length > 0) return this.number === game.selectedCards[0].number;
-    if (game.drawAmount) return this.number.draw !== undefined && this.number.draw !== null && this.modifier?.draw !== undefined && this.modifier?.draw !== null;
-    if (game.playersTurn === false) return false;
-    return this.playableOn(game.discarded.at(-1)!);
+  playablePiles (forOpponent?: boolean): number[] {
+    if (game.selectedCards.length > 0 && this.number !== game.selectedCards[0].number) return [];
+    if (game.drawAmount && (this.number.draw === undefined || this.number.draw === null) && (this.modifier?.draw === undefined || this.modifier?.draw === null)) return [];
+    if (game.playersTurn === false && !forOpponent) return [];
+    if (game.drawAmount) return [game.drawPile];
+    let availablePiles = [];
+    for (let i = 0; i < 4; i++) {
+      if (i === game.closedPile) continue;
+      if (this.playableOn(game.discarded[i].at(-1)!)) availablePiles.push(i);
+    }
+    return availablePiles;
   }
 }

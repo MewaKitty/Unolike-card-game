@@ -41,7 +41,7 @@
 
 .pickupPile {
   position: absolute;
-  top: 8rem;
+  top: 30vh;
   left: 10vw;
   padding: 2rem;
   border-radius: .5rem;
@@ -54,13 +54,36 @@
 
 .cardDiscard {
   position: absolute;
-  top: 8rem;
+  top: 14rem;
   left: 30vw;
   padding: 1rem;
   border-radius: .5rem;
+  transition: opacity 160ms;
 }
 
-.dragging {
+.cardDiscard0 {
+  left: 30vw;
+}
+
+.cardDiscard1 {
+  left: 40vw;
+}
+.cardDiscard2 {
+  left: 50vw;
+}
+.cardDiscard3 {
+  left: 60vw;
+}
+
+.cardDiscard.drawPile {
+  outline: 2px solid #dddd00;
+}
+.cardDiscard.closed {
+  outline: 2px solid #ffaaaa;
+  opacity: 0.5;
+}
+
+.dragging.card {
   position: fixed;
   cursor: grabbing;
   z-index: 2;
@@ -70,7 +93,7 @@
   outline: 2px solid #77ee77;
 }
 
-.unplayable {
+.unplayable.card, .unplayable {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -108,8 +131,8 @@ div.selectedCard {
 
 .drawAmountText {
   position: absolute;
-  top: 23rem;
-  left: 10vw;
+  top: 30vh;
+  left: 22vw;
   font-weight: bold;
   font-size: 3rem;
 }
