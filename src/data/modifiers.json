@@ -1,14 +1,30 @@
 [
     {
         "name": "Add 2 pressure",
-        "actionId": "x2"
+        "actionId": "x2",
+        "modifies": 2
     },
     {
         "name": "Draw 1 card",
-        "draw": 1
+        "draw": 1,
+        "modifies": 1,
+        "weight": 2
     },
     {
         "name": "Random occurance",
-        "actionId": "randomOccurance"
+        "actionId": "randomOccurance",
+        "weight": 5
+    },
+    {
+        "name": "Landmine",
+        "actionId": "overload"
+    },
+    {
+        "name": "Replace 2 opponent cards",
+        "actionId": "-2"
+    },
+    {
+        "name": "Lock pile to locks and wilds",
+        "actionId": "lock"
     }
 ]

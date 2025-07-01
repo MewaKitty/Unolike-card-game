@@ -5,6 +5,7 @@ let draggedCard: Card | null = null;
 export let dragGap: { x: number, y: number } = { x: -1, y: -1 };
 export const dragGaps: {x: number, y: number}[] = [];
 export const setDraggedCard = (card: Card) => draggedCard = card;
+export const getDraggedCard = () => draggedCard;
 
 export const setupDragging = () => {
     const cardRack = document.getElementsByClassName("cardRack")[0];
@@ -36,7 +37,7 @@ export const setupDragging = () => {
                 && e.pageX < destination.getBoundingClientRect().x + destination.getBoundingClientRect().width
                 && e.pageY < destination.getBoundingClientRect().y + destination.getBoundingClientRect().height) {
                 const pile = +(destination as HTMLDivElement).dataset.index!;
-                if (destination.classList.contains("cardDiscard") && !draggedCard.playablePiles().includes(pile)) return;
+                if (destination.classList.contains("cardDiscard") && !(game.selectedCards.includes(draggedCard) ? game.playableTwins() : draggedCard.playablePiles()).includes(pile)) return;
                 destination.classList.add("dragTarget")
             } else {
                 destination.classList.remove("dragTarget")
@@ -56,6 +57,7 @@ export const setupDragging = () => {
         draggedCard.element.style.left = "";
         draggedCard.element.style.top = "";
         console.log(game.inventory)
+        const selectedCards = Array.from(game.selectedCards);
         for (const destination of document.getElementsByClassName("dragDestination")) {
             if (e.pageX > destination.getBoundingClientRect().x
                 && e.pageY > destination.getBoundingClientRect().y
@@ -63,16 +65,36 @@ export const setupDragging = () => {
                 && e.pageY < destination.getBoundingClientRect().y + destination.getBoundingClientRect().height) {
                 if (!draggedCard.tags.includes("pickup") && destination.classList.contains("cardDiscard")) {
                     const pile = +(destination as HTMLDivElement).dataset.index!;
-                    if (destination.classList.contains("cardDiscard") && !draggedCard.playablePiles().includes(pile)) return;
+                    if (game.selectedCards.length > 1 && game.selectedCards.includes(draggedCard)) {
+                        const piles = game.playableTwins();
+                        if (!piles.includes(pile)) return;
+                    } else {
+                        if (destination.classList.contains("cardDiscard") && !draggedCard.playablePiles().includes(pile)) return;
+                    };
                     let skip = false;
                     if (game.selectedCards.includes(draggedCard)) {
                         for (const card of game.selectedCards) card.element.classList.remove("selectedCard");
-                        for (const card of game.selectedCards.filter(card => card !== draggedCard)) game.discardCard(card, pile);
-                        if (game.discardCard(draggedCard, pile)) skip = true;
-                        game.selectedCards.length = 0;
+                        if (game.selectedCards.length === 2 && game.selectedCards[0]?.number.value === game.selectedCards[1]?.number.value && (game.selectedCards[0]?.color !== game.discarded[pile].at(-1)?.color || game.selectedCards[0]?.number !== game.discarded[pile].at(-1)?.number)) {
+                            const sameColor = game.selectedCards.filter(card => card.color === game.discarded[pile].at(-1)?.color);
+                            const differentColor = game.selectedCards.filter(card => card.color !== game.discarded[pile].at(-1)?.color);
+                            console.info("the a")
+                            for (const card of sameColor) {
+                                if (game.discardCard(card, pile)) skip = true;
+                            }
+                            for (const card of differentColor) {
+                                if (game.discardCard(card, pile)) skip = true;
+                            }
+                        } else {
+                            for (const card of game.selectedCards.filter(card => card !== draggedCard)) {
+                                if (game.discardCard(card, pile)) skip = true;
+                            }
+                            if (game.discardCard(draggedCard, pile)) skip = true;
+                        }
                     } else {
                         if (game.discardCard(draggedCard, pile)) skip = true;
                     };
+                    game.selectedCards.length = 0;
+                    game.checkForWinCondition();
                     if (draggedCard.number.actionId !== "skip" && !skip) game.opponentTurn();
                     updateInventoryPlayability();
                 }
@@ -90,17 +112,19 @@ export const setupDragging = () => {
             }
             destination.classList.remove("dragTarget")
         }
+        console.log("time to reset")
         draggedCard = null;
         dragGap.x = -1;
         dragGap.y = -1;
         dragGaps.length = 0;
-        for (const card of game.selectedCards) {
+        console.info("sc", selectedCards)
+        for (const card of selectedCards) {
             card.element.classList.remove("dragging");
             card.element.style.left = "";
             card.element.style.top = "";
         }
         setTimeout(() => {   
-            for (const card of game.selectedCards) {
+            for (const card of selectedCards) {
                 card.element.classList.remove("dragging");
                 card.element.style.left = "";
                 card.element.style.top = "";

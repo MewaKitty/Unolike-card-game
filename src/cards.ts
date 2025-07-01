@@ -19,7 +19,8 @@ interface CardNumber {
   draw?: number,
   actionId?: string,
   color?: string,
-  description?: string
+  description?: string,
+  unlisted?: boolean
 }
 
 interface CardModifier {
@@ -39,12 +40,12 @@ export class Card {
   constructor (hidden?: boolean, tags?: string[]) {
     const isWild = Math.random() > 0.9;
     this.color = random(colorData.filter(color => isWild ? color.wild : !color.wild));
-    const isSymbol = this.color.wild ? true : Math.random() > 0.7;
-    this.number = isSymbol ? weightedRandom(symbolData.filter(symbol => symbol.wild === this.color.wild)) : random(numberData);
+    const isSymbol = this.color.wild ? true : Math.random() > 0.9;
+    this.number = isSymbol ? weightedRandom(symbolData.filter(symbol => symbol.wild === this.color.wild)) : random(numberData.filter(number => !number.unlisted));
     if (this.number.color) this.color = colorData.find(color => color.name === this.number.color)!;
     this.hidden = hidden ?? false;
     this.tags = tags ?? [];
-    this.modifier = Math.random() > 0.7 ? weightedRandom(modifierData) : null
+    this.modifier = (this.number.description && !this.number.draw) ? null : (Math.random() > 0.5 ? weightedRandom(modifierData) : null)
 
     const wrapper = document.createElement("div");
     wrapper.classList.add("cardWrapper");
@@ -55,7 +56,7 @@ export class Card {
     this.wrapper = wrapper;
     let pointerDownTime = 0;
     div.addEventListener("pointerdown", e => {
-      if (!this.tags.includes("pickup") && this.playablePiles().length === 0) return;
+      if (!this.tags.includes("pickup") && !this.isPlayable()) return;
       if (this.tags.includes("discarded")) return;
       if (!this.tags.includes("pickup") && wrapper.parentElement !== document.getElementsByClassName("cardRack")[0]) return;
       if (!game.playersTurn) return;
@@ -72,7 +73,8 @@ export class Card {
           y: e.pageY - card.element.getBoundingClientRect().top
         });
       }
-      const piles = game.selectedCards.length > 1 && game.selectedCards.includes(this) ? game.selectedCards.filter(card => card !== this).map(card => card.playablePiles()).flat() : this.playablePiles();
+      const piles = game.selectedCards.length > 0 && game.selectedCards.includes(this) ? game.playableTwins() : this.playablePiles();
+
       for (let i = 0; i < 4; i++) {
         const cardDiscard = document.getElementsByClassName("cardDiscard" + i)[0];
         if (piles.includes(i)) {
@@ -85,7 +87,7 @@ export class Card {
     })
     wrapper.addEventListener("pointerup", async () => {
       if (Date.now() - pointerDownTime > 350) return;
-      if (!this.tags.includes("pickup") && this.playablePiles().length === 0) return;
+      if (!this.tags.includes("pickup") && !this.isPlayable()) return;
       if (!game.inventory.includes(this)) return;
       if (this.tags.includes("discarded")) return;
       if (div.classList.contains("selectedCard")) {
@@ -94,6 +96,18 @@ export class Card {
       } else {
         div.classList.add("selectedCard")
         game.selectedCards.push(this);
+      }
+      if (game.selectedCards.length > 0) {
+        const piles = game.playableTwins();
+        for (let i = 0; i < 4; i++) {
+          const cardDiscard = document.getElementsByClassName("cardDiscard" + i)[0];
+          if (piles.includes(i)) {
+            cardDiscard.classList.remove("unplayable")
+          } else {
+            cardDiscard.classList.add("unplayable")
+          }
+          if (i === game.closedPile) cardDiscard.classList.add("unplayable");
+        }
       }
       updateInventoryPlayability();
     })
@@ -129,15 +143,88 @@ export class Card {
     return false;
   }
   playablePiles (forOpponent?: boolean): number[] {
-    if (game.selectedCards.length > 0 && this.number !== game.selectedCards[0].number) return [];
+    /*if (game.selectedCards.length > 0) {
+      if (game.selectedCards[0].number.actionId === "discard2Color") {
+        if (this.color !== game.selectedCards[0].color || (game.selectedCards.includes(this) ? false : game.selectedCards.length >= 2)) {
+          return []
+        } else {
+          if (this !== game.selectedCards[0]) game.selectedCards[0].playablePiles()
+        }
+      } else {
+        console.log("a")
+        console.log(this.number !== game.selectedCards[0].number)
+        if (game.selectedCards.length === 1 && game.inventory.length >= 3) {
+          let match = [];
+          for (const [index, discard] of game.discarded.entries()) {
+            if (game.closedPile === index) continue;
+            if (discard.at(-1)?.number === game.selectedCards[0].number && discard.at(-1)?.color === game.selectedCards[0].color) match.push(index);
+          }
+          if (match.length > 0) return match;
+        }
+        if (game.selectedCards.length === 2 && game.selectedCards[0].number !== game.selectedCards[1].number) return [];
+        if (this.number !== game.selectedCards[0].number) {
+          return [];
+        } else {
+          if (this !== game.selectedCards[0]) return game.selectedCards[0].playablePiles()
+        }
+      }
+      return [];
+    }*/
     if (game.drawAmount && (this.number.draw === undefined || this.number.draw === null) && (this.modifier?.draw === undefined || this.modifier?.draw === null)) return [];
     if (game.playersTurn === false && !forOpponent) return [];
     if (game.drawAmount) return [game.drawPile];
     let availablePiles = [];
     for (let i = 0; i < 4; i++) {
       if (i === game.closedPile) continue;
+      if (game.lockedPiles.includes(i) && game.checkLockApplication()) {
+        if (!this.color.wild && this.modifier?.actionId !== "lock") continue;
+      }
       if (this.playableOn(game.discarded[i].at(-1)!)) availablePiles.push(i);
     }
     return availablePiles;
+  }
+  isPlayable () {
+    if (game.selectedCards.includes(this)) return true;
+
+    if (game.selectedCards.length === 0) {
+      if (this.playablePiles().length > 0) return true;
+    }
+
+    if (game.drawAmount && (this.number.draw === undefined || this.number.draw === null) && (this.modifier?.draw === undefined || this.modifier?.draw === null)) return false;
+    
+    // Handle the same symbol rule
+    if (game.selectedCards[0]?.number === this.number) return true;
+    
+    // Handle the twin rule
+    if (this.number.value === null || this.number.value === undefined) return false;
+    if (game.selectedCards.length >= 2) return game.selectedCards.includes(this);
+    if (game.selectedCards.length === 1) {
+      if (game.selectedCards[0].number.value === null || game.selectedCards[0].number.value === undefined) return false;
+      for (const [index, discard] of game.discarded.entries()) {
+        if (game.closedPile === index) continue;
+        if (game.lockedPiles.includes(index) && game.checkLockApplication() && (this.modifier?.actionId !== "lock" || game.selectedCards[0].modifier?.actionId !== "lock")) continue;
+        if (game.selectedCards[0].number.value! + this.number.value === discard.at(-1)!.number.value) return true;
+        if (game.selectedCards[0].number.actionId === "#" && numberData.map(number => number.value).includes(discard.at(-1)?.number.value! - this.number.value)) return true;
+      }
+      return false;
+    };
+    if (game.selectedCards.length === 0) {
+      for (const secondCard of game.inventory) {
+        if (secondCard.number.value === null || secondCard.number.value === undefined) continue;
+        if (this === secondCard) continue;
+        for (const [index, discard] of game.discarded.entries()) {
+          if (game.closedPile === index) continue;
+          if (game.lockedPiles.includes(index) && (this.modifier?.actionId !== "lock" || secondCard.modifier?.actionId !== "lock")) continue;
+          if (discard.at(-1)?.number.value === this.number.value + secondCard.number.value) return true;
+          if (this.number.actionId === "#") {
+            if (numberData.map(number => number.value).includes(discard.at(-1)?.number.value! - secondCard.number.value)) return true;
+          }
+          if (secondCard.number.actionId === "#") {
+            if (numberData.map(number => number.value).includes(discard.at(-1)?.number.value! - this.number.value)) return true;
+          }
+        }
+      }
+    }
+    return false;
   }
 }

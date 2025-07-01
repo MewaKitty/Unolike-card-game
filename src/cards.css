@@ -4,8 +4,8 @@
   padding: 1rem;
   background: var(--color);
   width: fit-content;
-  height: 9rem;
-  width: 6rem;
+  height: 10rem;
+  width: 7rem;
   border: 2px solid #333;
   border-radius: .5rem;
   cursor: pointer;
@@ -16,8 +16,8 @@
 }
 
 .cardWrapper {
-  height: 9rem;
-  width: 6rem;
+  height: 10rem;
+  width: 7rem;
   user-select: none;
   transition: outline 160ms;
 }

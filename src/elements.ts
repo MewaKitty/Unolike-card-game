@@ -65,7 +65,6 @@ app.appendChild(opponentHand);
 
 const drawAmountText = document.createElement("span");
 drawAmountText.classList.add("drawAmountText")
-drawAmountText.textContent = "+2"
 app.appendChild(drawAmountText);
 
 const pressureCount = document.createElement("span");

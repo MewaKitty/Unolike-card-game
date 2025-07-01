@@ -1,11 +1,13 @@
 [
     {
         "name": "+2",
-        "draw": 2
+        "draw": 2,
+        "description": "Can defend against other plus cards"
     },
     {
         "name": "+5",
-        "draw": 5
+        "draw": 5,
+        "description": "Can defend against other plus cards"
     },
     {
         "name": "Skip",
@@ -14,12 +16,14 @@
     {
         "name": "+2",
         "draw": 2,
-        "wild": true
+        "wild": true,
+        "description": "Can defend against other plus cards"
     },
     {
         "name": "+4",
         "draw": 4,
-        "wild": true
+        "wild": true,
+        "description": "Can defend against other plus cards"
     },
     {
         "name": "Blank",
@@ -47,16 +51,43 @@
         "actionId": "50"
     },
     {
-        "name": "Discard all same color",
+        "name": "Discard most same color",
         "actionId": "discardAll"
     },
     {
         "name": "Add 10 pressure",
         "actionId": "x10",
-        "wild": true
+        "wild": true,
+        "description": "Opponent draws 1-10 cards"
     },
     {
         "name": "Draw color",
         "actionId": "drawColor"
+    },
+    {
+        "name": "Discard 2 of color",
+        "actionId": "discard2Color"
+    },
+    {
+        "name": "Disarm",
+        "description": "Cancels out below landmines",
+        "actionId": "disarm"
+    },
+    {
+        "name": "Reflect",
+        "description": "Makes a landmine attack opponent",
+        "actionId": "giveaway"
+    },
+    {
+        "name": "Any number",
+        "description": "Counts as any number",
+        "actionId": "#",
+        "value": 50
+    },
+    {
+        "name": "Random occurance",
+        "description": "Now as a card!",
+        "actionId": "randomBox",
+        "weight": 99
     }
 ]
