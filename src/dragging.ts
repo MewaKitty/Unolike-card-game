@@ -37,7 +37,7 @@ export const setupDragging = () => {
                 && e.pageX < destination.getBoundingClientRect().x + destination.getBoundingClientRect().width
                 && e.pageY < destination.getBoundingClientRect().y + destination.getBoundingClientRect().height) {
                 const pile = +(destination as HTMLDivElement).dataset.index!;
-                if (destination.classList.contains("cardDiscard") && !(game.selectedCards.includes(draggedCard) ? game.playableTwins() : draggedCard.playablePiles()).includes(pile)) return;
+                if ((destination.classList.contains("cardDiscard") || destination.classList.contains("minipileInner")) && !(game.selectedCards.includes(draggedCard) ? game.playableTwins() : draggedCard.playablePiles()).includes(pile)) return;
                 destination.classList.add("dragTarget")
             } else {
                 destination.classList.remove("dragTarget")
@@ -63,13 +63,14 @@ export const setupDragging = () => {
                 && e.pageY > destination.getBoundingClientRect().y
                 && e.pageX < destination.getBoundingClientRect().x + destination.getBoundingClientRect().width
                 && e.pageY < destination.getBoundingClientRect().y + destination.getBoundingClientRect().height) {
-                if (!draggedCard.tags.includes("pickup") && destination.classList.contains("cardDiscard")) {
+                if (!draggedCard.tags.includes("pickup") && (destination.classList.contains("cardDiscard") || destination.classList.contains("minipileInner"))) {
+                    if (destination.classList.contains("minipileInner")) draggedCard.tags.push("minipile");
                     const pile = +(destination as HTMLDivElement).dataset.index!;
                     if (game.selectedCards.length > 1 && game.selectedCards.includes(draggedCard)) {
                         const piles = game.playableTwins();
                         if (!piles.includes(pile)) return;
                     } else {
-                        if (destination.classList.contains("cardDiscard") && !draggedCard.playablePiles().includes(pile)) return;
+                        if ((destination.classList.contains("cardDiscard") || destination.classList.contains("minipileInner")) && !draggedCard.playablePiles().includes(pile)) return;
                     };
                     let skip = false;
                     if (game.selectedCards.includes(draggedCard)) {
@@ -105,6 +106,18 @@ export const setupDragging = () => {
                             game.addToRack(new Card())
                         }
                         game.drawAmount = 0;
+                        if (draggedCard.tags.includes("minipile")) {
+                            for (const card of game.minipile) {
+                                game.addToRack(card);
+                                card.tags.splice(card.tags.indexOf("minipile"), 1);
+                                card.tags.splice(card.tags.indexOf("discarded"), 1);
+                            }
+                            game.minipile.length = 0;
+                            game.isMinipileActive = false;
+                            document.getElementsByClassName("minipileOuter")[0].classList.add("minipileExit");
+                            updateInventoryPlayability();
+                            game.updateCardDiscard();
+                        }
                         document.getElementsByClassName("drawAmountText")[0].textContent = "";
                         game.opponentTurn();
                     };

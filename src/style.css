@@ -158,3 +158,45 @@ div.selectedCard {
   font-weight: bolder;
   font-size: 1.5;
 }
+
+.minipileOuter {
+  position: absolute;
+  top: 30vh;
+  left: 0;
+  width: calc(10vw + 10rem);
+  height: 14rem;
+  background: #002200;
+  border-top-right-radius: 1rem;
+  border-bottom-right-radius: 1rem;
+  padding: 1rem;
+  box-sizing: border-box;
+  color: white;
+  display: flex;
+  gap: 1rem;
+  transition: left .5s;
+}
+
+.minipileExit {
+  left: calc(-10vw + -10rem);
+}
+
+.minipileInfo {
+  width: 10vw;
+  display: flex;
+  flex-direction: column;
+}
+
+.minipileLabel {
+  font-size: 1.2rem;
+}
+
+.minipileInner {
+  height: 10rem;
+  border-radius: .5rem;
+  position: unset;
+  padding: 0;
+}
+
+.disabledPile {
+  opacity: 0.5;
+}

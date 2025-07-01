@@ -38,9 +38,9 @@ export class Card {
   tags: string[]
   modifier: CardModifier | null
   constructor (hidden?: boolean, tags?: string[]) {
-    const isWild = Math.random() > 0.9;
+    const isWild = Math.random() > 0.93;
     this.color = random(colorData.filter(color => isWild ? color.wild : !color.wild));
-    const isSymbol = this.color.wild ? true : Math.random() > 0.9;
+    const isSymbol = this.color.wild ? true : Math.random() > 0.8;
     this.number = isSymbol ? weightedRandom(symbolData.filter(symbol => symbol.wild === this.color.wild)) : random(numberData.filter(number => !number.unlisted));
     if (this.number.color) this.color = colorData.find(color => color.name === this.number.color)!;
     this.hidden = hidden ?? false;
@@ -56,9 +56,9 @@ export class Card {
     this.wrapper = wrapper;
     let pointerDownTime = 0;
     div.addEventListener("pointerdown", e => {
-      if (!this.tags.includes("pickup") && !this.isPlayable()) return;
-      if (this.tags.includes("discarded")) return;
-      if (!this.tags.includes("pickup") && wrapper.parentElement !== document.getElementsByClassName("cardRack")[0]) return;
+      if (!this.tags.includes("pickup") && !wrapper.parentElement?.classList.contains("minipileInner") && !this.isPlayable()) return;
+      if (this.tags.includes("discarded") && !wrapper.parentElement?.classList.contains("minipileInner")) return;
+      if (!this.tags.includes("pickup") && !wrapper.parentElement?.classList.contains("minipileInner") && wrapper.parentElement !== document.getElementsByClassName("cardRack")[0]) return;
       if (!game.playersTurn) return;
       pointerDownTime = Date.now();
       dragGap.x = e.pageX - div.getBoundingClientRect().left;
@@ -75,7 +75,7 @@ export class Card {
       }
       const piles = game.selectedCards.length > 0 && game.selectedCards.includes(this) ? game.playableTwins() : this.playablePiles();
 
-      for (let i = 0; i < 4; i++) {
+      for (let i = -1; i < 4; i++) {
         const cardDiscard = document.getElementsByClassName("cardDiscard" + i)[0];
         if (piles.includes(i)) {
           cardDiscard.classList.remove("unplayable")
@@ -174,12 +174,14 @@ export class Card {
     if (game.playersTurn === false && !forOpponent) return [];
     if (game.drawAmount) return [game.drawPile];
     let availablePiles = [];
-    for (let i = 0; i < 4; i++) {
+    for (let i = -1; i < 4; i++) {
       if (i === game.closedPile) continue;
+      if (i === -1 && game.minipile.length === 0) continue;
+      if (game.isMinipileActive && i >= 0) continue;
       if (game.lockedPiles.includes(i) && game.checkLockApplication()) {
-        if (!this.color.wild && this.modifier?.actionId !== "lock") continue;
+        if (!this.color.wild && this.modifier?.actionId !== "lock" && this.number?.actionId !== "disarm") continue;
       }
-      if (this.playableOn(game.discarded[i].at(-1)!)) availablePiles.push(i);
+      if (this.playableOn(i === -1 ? game.minipile.at(-1)! : game.discarded[i].at(-1)!)) availablePiles.push(i);
     }
     return availablePiles;
   }
@@ -202,7 +204,7 @@ export class Card {
       if (game.selectedCards[0].number.value === null || game.selectedCards[0].number.value === undefined) return false;
       for (const [index, discard] of game.discarded.entries()) {
         if (game.closedPile === index) continue;
-        if (game.lockedPiles.includes(index) && game.checkLockApplication() && (this.modifier?.actionId !== "lock" || game.selectedCards[0].modifier?.actionId !== "lock")) continue;
+        if (game.lockedPiles.includes(index) && game.checkLockApplication() && ((this.modifier?.actionId !== "lock" && this.number?.actionId !== "disarm") || (game.selectedCards[0].modifier?.actionId !== "lock" && game.selectedCards[0].number?.actionId !== "disarm"))) continue;
         if (game.selectedCards[0].number.value! + this.number.value === discard.at(-1)!.number.value) return true;
         if (game.selectedCards[0].number.actionId === "#" && numberData.map(number => number.value).includes(discard.at(-1)?.number.value! - this.number.value)) return true;
       }
@@ -214,7 +216,7 @@ export class Card {
         if (this === secondCard) continue;
         for (const [index, discard] of game.discarded.entries()) {
           if (game.closedPile === index) continue;
-          if (game.lockedPiles.includes(index) && (this.modifier?.actionId !== "lock" || secondCard.modifier?.actionId !== "lock")) continue;
+          if (game.lockedPiles.includes(index) && ((this.modifier?.actionId !== "lock" && this.number?.actionId !== "disarm") || (secondCard.modifier?.actionId !== "lock" && secondCard.number?.actionId !== "disarm"))) continue;
           if (discard.at(-1)?.number.value === this.number.value + secondCard.number.value) return true;
           if (this.number.actionId === "#") {
             if (numberData.map(number => number.value).includes(discard.at(-1)?.number.value! - secondCard.number.value)) return true;

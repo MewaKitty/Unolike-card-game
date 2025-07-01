@@ -72,4 +72,29 @@ pressureCount.classList.add("pressureCount")
 pressureCount.textContent = "Pressure: 1/10";
 app.appendChild(pressureCount);
 
+const minipileOuter = document.createElement("div");
+minipileOuter.classList.add("minipileOuter");
+const minipileInfo = document.createElement("div")
+minipileInfo.classList.add("minipileInfo");
+const minipileLabel = document.createElement("span");
+minipileLabel.classList.add("minipileLabel");
+minipileLabel.textContent = "Minipile";
+minipileInfo.appendChild(minipileLabel)
+const minipileDescription = document.createElement("span");
+minipileDescription.classList.add("minipileDescription");
+minipileDescription.textContent = "Drag the entire pile to your inventory if you can't play or defend against a plus card.";
+minipileInfo.appendChild(minipileDescription)
+minipileOuter.appendChild(minipileInfo);
+const minipileInner = document.createElement("div");
+minipileInner.classList.add("minipileInner");
+minipileInner.classList.add("cardDiscard-1");
+minipileInner.dataset.index = "-1";
+const minipileCard = new Card(false, ["minipile"]);
+minipileInner.appendChild(minipileCard.wrapper)
+game.minipile.push(minipileCard);
+minipileOuter.appendChild(minipileInner);
+minipileInner.classList.add("dragDestination");
+minipileOuter.classList.add("minipileExit");
+app.appendChild(minipileOuter);
+
 setupDragging();

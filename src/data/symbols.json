@@ -70,7 +70,7 @@
     },
     {
         "name": "Disarm",
-        "description": "Cancels out below landmines",
+        "description": "Cancels out below landmines and locks",
         "actionId": "disarm"
     },
     {
@@ -81,13 +81,33 @@
     {
         "name": "Any number",
         "description": "Counts as any number",
-        "actionId": "#",
-        "value": 50
+        "actionId": "#"
     },
     {
         "name": "Random occurance",
         "description": "Now as a card!",
-        "actionId": "randomBox",
+        "actionId": "randomBox"
+    },
+    {
+        "name": "+2",
+        "draw": 2,
+        "description": "Now... as a wild card?",
+        "wild": true
+    },
+    {
+        "name": "+0",
+        "draw": 0,
+        "description": "Reflect plus cards with this"
+    },
+    {
+        "name": "Skip",
+        "actionId": "skip",
+        "wild": true
+    },
+    {
+        "name": "Minipile",
+        "actionId": "minipile",
+        "wild": true,
         "weight": 99
     }
 ]
