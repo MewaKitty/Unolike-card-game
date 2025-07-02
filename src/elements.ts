@@ -1,6 +1,7 @@
 import { game, updateInventoryPlayability } from "./game.ts";
 import { setupDragging } from "./dragging.ts";
 import { Card } from "./cards.ts";
+import colorData from "./data/colors.json";
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 
@@ -47,9 +48,13 @@ pickupPile.addEventListener("pointerup", async () => {
     cardRack.appendChild(placeholderDiv)
     setTimeout(() => placeholderDiv.remove(), 200)
     await game.animateElementMovement(game.pickupCard.element, placeholderDiv, game.pickupCard.wrapper)
+    if (game.pickupCard.number.actionId === "draw3More") game.drawAmount += 3;
     game.addToRack(game.pickupCard)
-    for (let i = 0; i < game.drawAmount - 1; i++) {
-        game.addToRack(new Card())
+    console.debug("draw", game.drawAmount)
+    for (let i = 0; i < Math.min(game.drawAmount - 1, 30); i++) {
+        const newCard = new Card();
+        if (newCard.number.actionId === "draw3More") game.drawAmount += 3;
+        game.addToRack(newCard)
     }
     game.drawAmount = 0;
     document.getElementsByClassName("drawAmountText")[0].textContent = "";
@@ -89,12 +94,105 @@ const minipileInner = document.createElement("div");
 minipileInner.classList.add("minipileInner");
 minipileInner.classList.add("cardDiscard-1");
 minipileInner.dataset.index = "-1";
-const minipileCard = new Card(false, ["minipile"]);
-minipileInner.appendChild(minipileCard.wrapper)
-game.minipile.push(minipileCard);
 minipileOuter.appendChild(minipileInner);
 minipileInner.classList.add("dragDestination");
 minipileOuter.classList.add("minipileExit");
 app.appendChild(minipileOuter);
 
+const colorChooser = document.createElement("div");
+colorChooser.classList.add("colorChooser");
+const colorChooserLabel = document.createElement("span");
+colorChooserLabel.textContent = "Choose a color";
+colorChooser.appendChild(colorChooserLabel);
+const colorChooserInner = document.createElement("div");
+colorChooserInner.classList.add("colorChooserInner");
+for (const color of colorData) {
+    if (color.wild) continue;
+    const colorEntry = document.createElement("div");
+    colorEntry.classList.add("colorEntry")
+    colorEntry.style.background = color.color;
+    colorChooserInner.appendChild(colorEntry);
+    colorEntry.addEventListener("click", async () => {
+        colorChooser.classList.add("colorChooserExit");
+        game.colorChooserActive = false;
+        game.playersTurn = false;
+        switch (game.colorChooserAction) {
+            case "draw3DiscardColor":
+                for (let i = 0; i < 3; i++) {
+                    await game.opponentPickup();
+                }
+                for (const card of game.opponentHand) {
+                    if (card.color.name === color.name) {
+                        game.opponentHand.splice(game.opponentHand.indexOf(card), 1);
+                        card.wrapper.remove();
+                        if (game.colorChooserPile === -1) {
+                            game.minipile.unshift(card);
+                        } else {
+                            game.discarded[game.colorChooserPile].unshift(card);
+                        }
+                    }
+                }
+                break;
+            case "draw1To2Color":
+                const card = await game.opponentPickup();
+                if (card.color.name !== color.name) {
+                    await game.opponentPickup();
+                }
+        }
+        game.playersTurn = true;
+        updateInventoryPlayability();
+        game.updateCardDiscard();
+    })
+}
+colorChooser.appendChild(colorChooserInner)
+colorChooser.classList.add("colorChooserExit");
+app.appendChild(colorChooser);
 setupDragging();
+
+const useReflectBox = document.createElement("div");
+useReflectBox.classList.add("useReflectBox");
+const reflectDisplay = document.createElement("div");
+reflectDisplay.classList.add("reflectDisplay");
+useReflectBox.appendChild(reflectDisplay);
+const reflectDisplayGap = document.createElement("div");
+reflectDisplayGap.classList.add("reflectDisplayGap");
+useReflectBox.appendChild(reflectDisplayGap);
+
+const reflectBoxPanel = document.createElement("div")
+reflectBoxPanel.classList.add("reflectBoxPanel")
+const useReflectLabel = document.createElement("span");
+useReflectLabel.textContent = "Use reflect card?"
+reflectBoxPanel.appendChild(useReflectLabel)
+useReflectBox.appendChild(reflectBoxPanel)
+useReflectBox.classList.add("reflectBoxExit")
+app.appendChild(useReflectBox)
+
+const reflectBoxYes = document.createElement("button");
+reflectBoxYes.textContent = "Use";
+reflectBoxPanel.appendChild(reflectBoxYes)
+
+reflectBoxYes.addEventListener("click", async () => {
+    useReflectBox.classList.add("reflectBoxExit");
+    (game.reflectPile === -1 ? game.minipile : game.discarded[game.reflectPile]).push(game.reflectCard!);
+    game.inventory.splice(game.inventory.indexOf(game.reflectCard!), 1);
+    await game.animateElementMovement(game.reflectCard!.wrapper, document.getElementsByClassName("cardDiscard" + game.reflectPile)[0].children[0] as HTMLElement, document.getElementsByClassName("cardDiscard" + game.reflectPile)[0]);
+    game.reflectRes?.(true);
+    (document.getElementsByClassName("reflectPlaceholder")[0] as HTMLDivElement).style.minWidth = "0";
+    setTimeout(() => document.getElementsByClassName("reflectPlaceholder")[0].remove(), 160)
+    game.reflectCard = null;
+    updateInventoryPlayability();
+    await game.opponentTurn();
+})
+const reflectBoxNo = document.createElement("button");
+reflectBoxNo.textContent = "Keep";
+reflectBoxPanel.appendChild(reflectBoxNo)
+
+reflectBoxNo.addEventListener("click", async () => {
+    useReflectBox.classList.add("reflectBoxExit")
+    await game.animateElementMovement(game.reflectCard!.wrapper, document.getElementsByClassName("reflectPlaceholder")[0] as HTMLElement, document.getElementsByClassName("reflectPlaceholder")[0])
+    document.getElementsByClassName("reflectPlaceholder")[0].parentElement?.insertBefore(game.reflectCard!.wrapper, document.getElementsByClassName("reflectPlaceholder")[0])
+    document.getElementsByClassName("reflectPlaceholder")[0].remove();
+    game.reflectCard = null;
+    updateInventoryPlayability();
+    game.reflectRes?.(false);
+})

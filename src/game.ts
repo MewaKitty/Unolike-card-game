@@ -1,7 +1,9 @@
 import { Card } from "./cards.ts";
+import type { CardColor } from "./cards.ts";
 import { random, shuffleArray, randomInteger } from "./utils.ts";
 import { getDraggedCard } from "./dragging.ts";
 import numberData from "./data/numbers.json";
+import colorData from "./data/colors.json";
 
 export const discardedCards: Card[] = []
 
@@ -19,6 +21,12 @@ export class Game {
     lockedPiles: number[];
     isMinipileActive: boolean;
     minipile: Card[];
+    colorChooserActive: boolean;
+    colorChooserPile: number;
+    colorChooserAction: string;
+    reflectCard: Card | null;
+    reflectRes: Function | null;
+    reflectPile: number;
     constructor() {
         this.inventory = [];
         this.opponentHand = [];
@@ -42,6 +50,12 @@ export class Game {
         this.lockedPiles = [];
         this.isMinipileActive = false;
         this.minipile = [];
+        this.colorChooserActive = false;
+        this.colorChooserPile = -1;
+        this.colorChooserAction = "";
+        this.reflectCard = null;
+        this.reflectRes = null;
+        this.reflectPile = -1;
     }
     updateCardDiscard() {
         for (let i = -1; i < 4; i++) {
@@ -53,6 +67,7 @@ export class Game {
             console.log(pileContents)
             if (!pileContents.at(-1)?.tags.includes("discarded")) pileContents.at(-1)?.tags.push("discarded")
             if (i === -1 && !pileContents.at(-1)?.tags.includes("minipile")) pileContents.at(-1)?.tags.push("minipile")
+            pileContents.at(-1)?.element.classList.remove("unplayable");
             if (i === game.closedPile) {
                 cardDiscard.classList.add("closed");
             } else {
@@ -75,7 +90,7 @@ export class Game {
             }
         }
     }
-    animateElementMovement(element: HTMLElement, destination: HTMLElement, parent: Element) {
+    animateElementMovement(element: HTMLElement, destination: HTMLElement, parent: Element | false) {
         return new Promise(res => {
             element.style.position = "fixed";
             element.style.left = element.getBoundingClientRect().left + "px";
@@ -85,9 +100,10 @@ export class Game {
                 element.style.left = destination.getBoundingClientRect().left + "px";
                 element.style.top = destination.getBoundingClientRect().top + "px";
                 setTimeout(() => {
-                    element.style.position = "";
-                    parent.appendChild(element);
+                    if (parent) element.style.position = "";
+                    if (parent) parent.appendChild(element);
                     this.updateCardDiscard();
+                    element.style.transition = "";
                     res(null);
                 }, 500)
             }, 100)
@@ -207,7 +223,7 @@ export class Game {
         })
     }
     opponentPickup(involveMinipile?: boolean): Promise<Card> {
-        const card = game.isMinipileActive ? game.minipile.at(-1)! : game.pickupCard;
+        const card = game.isMinipileActive && involveMinipile ? game.minipile.at(-1)! : game.pickupCard;
         card.wrapper.style.position = "fixed";
         card.wrapper.style.left = card.wrapper.getBoundingClientRect().left + "px";
         card.wrapper.style.top = card.wrapper.getBoundingClientRect().top + "px";
@@ -227,7 +243,7 @@ export class Game {
                 const opponentHand = document.getElementsByClassName("opponentHand")[0];
                 card.wrapper.style.left = opponentHand.getBoundingClientRect().left + "px";
                 card.wrapper.style.top = opponentHand.getBoundingClientRect().top + "px";
-                setTimeout(() => {
+                setTimeout(async () => {
                     card.wrapper.style.position = "";
                     opponentHand.appendChild(card.wrapper);
                     game.opponentHand.push(card);
@@ -243,6 +259,16 @@ export class Game {
                         document.getElementsByClassName("minipileOuter")[0].classList.add("minipileExit");
                         updateInventoryPlayability();
                         this.updateCardDiscard();
+                    }
+                    if (!this.isMinipileActive || !involveMinipile) {
+                        if (card.number.actionId === "draw3More") {
+                            card.hidden = false;
+                            card.updateElement();
+                            for (let i = 0; i < 3; i++) {
+                                if (game.opponentHand.length > 30) break;
+                                await this.opponentPickup();
+                            }
+                        }
                     }
                     res(card);
                 }, 500)
@@ -499,8 +525,17 @@ export class Game {
             document.getElementsByClassName("minipileInner")[0].appendChild(minipileCard.wrapper)
             game.minipile.push(minipileCard);
             document.getElementsByClassName("minipileOuter")[0].classList.remove("minipileExit");
+            minipileCard.element.classList.remove("unplayable")
             this.updateCardDiscard();
             updateInventoryPlayability();
+        }
+        if (card.number.actionId === "draw3DiscardColor" || card.number.actionId === "draw1To2Color") {
+            document.getElementsByClassName("colorChooser")[0].classList.remove("colorChooserExit");
+            this.colorChooserActive = true;
+            this.colorChooserPile = pile;
+            this.colorChooserAction = card.number.actionId;
+            updateInventoryPlayability();
+            return true;
         }
     }
     async applyOpponentDiscardEffects(card: Card, pile: number) {
@@ -565,6 +600,7 @@ export class Game {
             document.getElementsByClassName("pressureCount")[0].textContent = "Pressure: " + game.pressureAmount + "/10";
         }
         if (card.number?.actionId === "drawColor") {
+            if (await this.checkForReflectStatus(pile)) return;
             (async () => {
                 const placeholderDiv = document.createElement("div");
                 placeholderDiv.classList.add("wrapper");
@@ -714,6 +750,41 @@ export class Game {
         if (card.modifier?.actionId === "lock") {
             if (!game.lockedPiles.includes(pile)) game.lockedPiles.push(pile);
         }
+        if (card.number?.actionId === "minipile") {
+            game.isMinipileActive = true;
+            const minipileCard = new Card(false, ["minipile"]);
+            document.getElementsByClassName("minipileInner")[0].textContent = "";
+            document.getElementsByClassName("minipileInner")[0].appendChild(minipileCard.wrapper)
+            game.minipile.push(minipileCard);
+            document.getElementsByClassName("minipileOuter")[0].classList.remove("minipileExit");
+            minipileCard.element.classList.remove("unplayable")
+            this.updateCardDiscard();
+            updateInventoryPlayability();
+        }
+        if (card.number.actionId === "draw3DiscardColor") {
+            for (let i = 0; i < 3; i++) {
+                await this.playerForcePickup();
+            }
+            const color: CardColor = random(colorData);
+            for (const card of game.inventory) {
+                if (card.color.name === color.name) {
+                    game.inventory.splice(game.inventory.indexOf(card), 1);
+                    card.wrapper.remove();
+                    if (game.colorChooserPile === -1) {
+                        game.minipile.unshift(card);
+                    } else {
+                        game.discarded[game.colorChooserPile].unshift(card);
+                    }
+                }
+            }
+        }
+        if (card.number.actionId === "draw1To2Color") {
+            const card = await game.playerForcePickup();
+            const color: CardColor = random(colorData);
+            if (card.color.name !== color.name) {
+                await game.playerForcePickup();
+            };
+        }
     }
     updateHands() {
         const cardRack = document.getElementsByClassName("cardRack")[0];
@@ -749,7 +820,10 @@ export class Game {
         if (game.selectedCards.length === 1) return game.selectedCards[0].playablePiles();
         const piles = [];
         if (game.selectedCards.length === 2 && !isNaN(+game.selectedCards[0].number.value!) && !isNaN(+game.selectedCards[1].number.value!)) {
-            for (const [index, discard] of game.discarded.entries()) {
+            for (let index = -1; index < game.discarded.length; index++) {
+                if (game.isMinipileActive && index >= 0) continue;
+                if (!game.isMinipileActive && index === -1) continue;
+                const discard = index === -1 ? game.minipile : game.discarded[index];
                 if (game.closedPile === index) continue;
                 if (discard.at(-1)?.number.value === game.selectedCards[0].number.value! + game.selectedCards[1].number.value!) piles.push(index)
                 if (game.selectedCards[0].number.actionId === "#" && numberData.map(number => number.value).includes(discard.at(-1)?.number.value! - game.selectedCards[1].number.value!)) piles.push(index);
@@ -758,20 +832,21 @@ export class Game {
         }
         if (game.selectedCards.length === 2 && game.inventory.length >= 3) {
           let match = [];
-          for (const [index, discard] of game.discarded.entries()) {
+        for (let index = -1; index < game.discarded.length; index++) {
+            if (game.isMinipileActive && index >= 0) continue;
+            if (!game.isMinipileActive && index === -1) continue;
+            const discard = index === -1 ? game.minipile : game.discarded[index];
             if (discard.at(-1)?.number === game.selectedCards[0].number && discard.at(-1)?.color === game.selectedCards[0].color) match.push(index);
           }
           if (match.length > 0) piles.push(...match);
         }
         if (game.selectedCards[0].number === game.selectedCards[1].number) {
-            console.log("pt", game.selectedCards.length)
             if (game.selectedCards.length === 2) {
                 piles.push(...game.selectedCards.map(card => card.playablePiles()).flat());
             } else {
                 piles.push(...game.selectedCards.filter(card => card !== getDraggedCard()).map(card => card.playablePiles()).flat())
             }
         }
-        console.log("playableTwins", piles)
         return piles;
     }
     checkForWinCondition () {
@@ -800,6 +875,28 @@ export class Game {
             if (!game.lockedPiles.includes(i) && game.closedPile !== i) misses = true;
         }
         return misses;
+    }
+    checkForReflectStatus (pile: number) {
+        return new Promise(async res => {
+            for (const card of game.inventory) {
+                if (card.number.actionId === "reflect") {
+                    card.element.style.zIndex = "1";
+                    document.getElementsByClassName("useReflectBox")[0].classList.remove("reflectBoxExit")
+                    const placeholderDiv = document.createElement("div");
+                    placeholderDiv.classList.add("reflectPlaceholder")
+                    placeholderDiv.style.minWidth = "7rem";
+                    placeholderDiv.style.transition = "min-width 160ms"
+                    card.wrapper.parentElement?.insertBefore(placeholderDiv, card.wrapper)
+                    game.reflectCard = card;
+                    game.reflectPile = pile;
+                    game.reflectRes = res;
+                    updateInventoryPlayability();
+                    await this.animateElementMovement(card.wrapper, document.getElementsByClassName("reflectDisplay")[0] as HTMLElement, document.getElementsByClassName("reflectDisplay")[0] as HTMLElement)
+                    return;
+                }
+            }
+            res(false);
+        })
     }
 }
 export const game = new Game();

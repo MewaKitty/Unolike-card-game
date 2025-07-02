@@ -9,7 +9,7 @@ export const getDraggedCard = () => draggedCard;
 
 export const setupDragging = () => {
     const cardRack = document.getElementsByClassName("cardRack")[0];
-    document.body.addEventListener("pointermove", e => {
+    addEventListener("pointermove", e => {
         if (!draggedCard) return;
         if (!draggedCard.element.classList.contains("dragging")) {
             draggedCard = null;
@@ -45,7 +45,7 @@ export const setupDragging = () => {
         }
     })
 
-    document.body.addEventListener("pointerup", e => {
+    addEventListener("pointerup", async e => {
         if (game.selectedCards.length === 0) {
             for (let i = 0; i < 4; i++) {
                 const cardDiscard = document.getElementsByClassName("cardDiscard" + i)[0];
@@ -63,7 +63,7 @@ export const setupDragging = () => {
                 && e.pageY > destination.getBoundingClientRect().y
                 && e.pageX < destination.getBoundingClientRect().x + destination.getBoundingClientRect().width
                 && e.pageY < destination.getBoundingClientRect().y + destination.getBoundingClientRect().height) {
-                if (!draggedCard.tags.includes("pickup") && (destination.classList.contains("cardDiscard") || destination.classList.contains("minipileInner"))) {
+                if (!draggedCard.tags.includes("pickup") && !draggedCard.tags.includes("minipile") && (destination.classList.contains("cardDiscard") || destination.classList.contains("minipileInner"))) {
                     if (destination.classList.contains("minipileInner")) draggedCard.tags.push("minipile");
                     const pile = +(destination as HTMLDivElement).dataset.index!;
                     if (game.selectedCards.length > 1 && game.selectedCards.includes(draggedCard)) {
@@ -80,19 +80,19 @@ export const setupDragging = () => {
                             const differentColor = game.selectedCards.filter(card => card.color !== game.discarded[pile].at(-1)?.color);
                             console.info("the a")
                             for (const card of sameColor) {
-                                if (game.discardCard(card, pile)) skip = true;
+                                if (await game.discardCard(card, pile)) skip = true;
                             }
                             for (const card of differentColor) {
-                                if (game.discardCard(card, pile)) skip = true;
+                                if (await game.discardCard(card, pile)) skip = true;
                             }
                         } else {
                             for (const card of game.selectedCards.filter(card => card !== draggedCard)) {
-                                if (game.discardCard(card, pile)) skip = true;
+                                if (await game.discardCard(card, pile)) skip = true;
                             }
-                            if (game.discardCard(draggedCard, pile)) skip = true;
+                            if (await game.discardCard(draggedCard, pile)) skip = true;
                         }
                     } else {
-                        if (game.discardCard(draggedCard, pile)) skip = true;
+                        if (await game.discardCard(draggedCard, pile)) skip = true;
                     };
                     game.selectedCards.length = 0;
                     game.checkForWinCondition();
@@ -101,9 +101,12 @@ export const setupDragging = () => {
                 }
                 if (destination === cardRack) {
                     if (!game.inventory.includes(draggedCard)) {
+                        if (draggedCard.number.actionId === "draw3More") game.drawAmount += 3;
                         game.addToRack(draggedCard);
-                        for (let i = 0; i < game.drawAmount - 1; i++) {
-                            game.addToRack(new Card())
+                        for (let i = 0; i < Math.min(game.drawAmount - 1, 30); i++) {
+                            const newCard = new Card();
+                            if (newCard.number.actionId === "draw3More") game.drawAmount += 3;
+                            game.addToRack(newCard)
                         }
                         game.drawAmount = 0;
                         if (draggedCard.tags.includes("minipile")) {

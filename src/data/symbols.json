@@ -51,7 +51,7 @@
         "actionId": "50"
     },
     {
-        "name": "Discard most same color",
+        "name": "Discard same color",
         "actionId": "discardAll"
     },
     {
@@ -62,7 +62,8 @@
     },
     {
         "name": "Draw color",
-        "actionId": "drawColor"
+        "actionId": "drawColor",
+        "weight": 99
     },
     {
         "name": "Discard 2 of color",
@@ -74,7 +75,7 @@
         "actionId": "disarm"
     },
     {
-        "name": "Reflect",
+        "name": "Rebound",
         "description": "Makes a landmine attack opponent",
         "actionId": "giveaway"
     },
@@ -97,7 +98,8 @@
     {
         "name": "+0",
         "draw": 0,
-        "description": "Reflect plus cards with this"
+        "description": "Reflect plus cards with this",
+        "wild": true
     },
     {
         "name": "Skip",
@@ -107,7 +109,32 @@
     {
         "name": "Minipile",
         "actionId": "minipile",
+        "wild": true
+    },
+    {
+        "name": "Draw 3 more cards",
+        "description": "Acts like blank card after drawn",
+        "actionId": "draw3More",
         "wild": true,
-        "weight": 99
+        "weight": 3
+    },
+    {
+        "name": "Draw 3 and discard color",
+        "actionId": "draw3DiscardColor",
+        "wild": true
+    },
+    {
+        "name": "Draw 1 to 2 color",
+        "description": "Draw a card; if color differs, draw again.",
+        "actionId": "draw1To2Color",
+        "wild": true
+    },
+    {
+        "name": "Reflect",
+        "draw": 0,
+        "actionId": "reflect",
+        "description": "Reflects any effects including plus cards",
+        "weight": 99,
+        "wild": true
     }
 ]

@@ -40,6 +40,10 @@
         "value": 9
     },
     {
+        "name": "10",
+        "value": 10
+    },
+    {
         "name": "50",
         "value": 50,
         "unlisted": true

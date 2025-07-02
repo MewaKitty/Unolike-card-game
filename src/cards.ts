@@ -6,7 +6,7 @@ import symbolData from "./data/symbols.json";
 import modifierData from "./data/modifiers.json";
 import { dragGap, dragGaps, setDraggedCard } from "./dragging.ts";
 
-interface CardColor {
+export interface CardColor {
   name: string,
   color: string,
   text?: string,
@@ -34,13 +34,14 @@ export class Card {
   color: CardColor
   element: HTMLDivElement
   wrapper: HTMLDivElement
+  innerElement: HTMLDivElement
   hidden: boolean
   tags: string[]
   modifier: CardModifier | null
   constructor (hidden?: boolean, tags?: string[]) {
     const isWild = Math.random() > 0.93;
     this.color = random(colorData.filter(color => isWild ? color.wild : !color.wild));
-    const isSymbol = this.color.wild ? true : Math.random() > 0.8;
+    const isSymbol = true //this.color.wild ? true : Math.random() > 0.8;
     this.number = isSymbol ? weightedRandom(symbolData.filter(symbol => symbol.wild === this.color.wild)) : random(numberData.filter(number => !number.unlisted));
     if (this.number.color) this.color = colorData.find(color => color.name === this.number.color)!;
     this.hidden = hidden ?? false;
@@ -51,6 +52,9 @@ export class Card {
     wrapper.classList.add("cardWrapper");
     const div = document.createElement("div");
     this.element = div;
+    const innerElement = document.createElement("div");
+    this.innerElement = innerElement;
+    div.appendChild(innerElement);
     this.updateElement();
     wrapper.appendChild(this.element);
     this.wrapper = wrapper;
@@ -73,6 +77,8 @@ export class Card {
           y: e.pageY - card.element.getBoundingClientRect().top
         });
       }
+
+      if (this.tags.includes("pickup")) return;
       const piles = game.selectedCards.length > 0 && game.selectedCards.includes(this) ? game.playableTwins() : this.playablePiles();
 
       for (let i = -1; i < 4; i++) {
@@ -113,27 +119,29 @@ export class Card {
     })
   }
   updateElement () {
-    const div = this.element;
-    div.classList.add("card");
-    div.style = `--color: ${this.color.color}; color: ${this.color.text ?? "#333"}`;
-    div.textContent = "";
+    const element = this.element;
+    const innerElement = this.innerElement;
+    element.classList.add("card");
+    innerElement.classList.add("cardInner");
+    innerElement.style = `--color: ${this.color.color}; color: ${this.color.text ?? "#333"}`;
+    innerElement.textContent = "";
     const cardNameSpan = document.createElement("span");
     cardNameSpan.textContent = this.number.name;
-    div.appendChild(cardNameSpan);
+    innerElement.appendChild(cardNameSpan);
     if (this.number.description) {
       const cardDescriptionSpan = document.createElement("span");
       cardDescriptionSpan.classList.add("cardDescriptionSpan");
       cardDescriptionSpan.textContent = this.number.description;
-      div.appendChild(cardDescriptionSpan);
+      innerElement.appendChild(cardDescriptionSpan);
     }
     if (this.modifier) {
       const cardModifierSpan = document.createElement("span");
       cardModifierSpan.classList.add("cardModifierSpan");
       cardModifierSpan.textContent = "+ " + this.modifier.name;
-      div.appendChild(cardModifierSpan);
+      innerElement.appendChild(cardModifierSpan);
     }
-    if (this.hidden) div.style = `--color: #fff; color: black;`;
-    if (this.hidden) div.textContent = `Card`;
+    if (this.hidden) innerElement.style = `--color: #fff; color: black;`;
+    if (this.hidden) innerElement.textContent = `Card`;
   }
   playableOn (card: Card) {
     if (card.number === this.number) return true;
@@ -186,6 +194,10 @@ export class Card {
     return availablePiles;
   }
   isPlayable () {
+    if (game.colorChooserActive) return false;
+    if (game.reflectCard === this) return true;
+    if (game.reflectCard) return false;
+
     if (game.selectedCards.includes(this)) return true;
 
     if (game.selectedCards.length === 0) {
@@ -197,12 +209,24 @@ export class Card {
     // Handle the same symbol rule
     if (game.selectedCards[0]?.number === this.number) return true;
     
+    // Handle discard 2 of color
+    if (game.selectedCards[0]?.number.actionId === "discard2Color") {
+      if (this.color !== game.selectedCards[0].color || (game.selectedCards.includes(this) ? false : game.selectedCards.length >= 2)) {
+        return false;
+      } else {
+        if (this !== game.selectedCards[0]) return true;
+      }
+    }
+
     // Handle the twin rule
     if (this.number.value === null || this.number.value === undefined) return false;
     if (game.selectedCards.length >= 2) return game.selectedCards.includes(this);
     if (game.selectedCards.length === 1) {
       if (game.selectedCards[0].number.value === null || game.selectedCards[0].number.value === undefined) return false;
-      for (const [index, discard] of game.discarded.entries()) {
+      for (let index = -1; index < game.discarded.length; index++) {
+        if (game.isMinipileActive && index >= 0) continue;
+        if (!game.isMinipileActive && index === -1) continue;
+        const discard = index === -1 ? game.minipile : game.discarded[index];
         if (game.closedPile === index) continue;
         if (game.lockedPiles.includes(index) && game.checkLockApplication() && ((this.modifier?.actionId !== "lock" && this.number?.actionId !== "disarm") || (game.selectedCards[0].modifier?.actionId !== "lock" && game.selectedCards[0].number?.actionId !== "disarm"))) continue;
         if (game.selectedCards[0].number.value! + this.number.value === discard.at(-1)!.number.value) return true;
@@ -214,7 +238,10 @@ export class Card {
       for (const secondCard of game.inventory) {
         if (secondCard.number.value === null || secondCard.number.value === undefined) continue;
         if (this === secondCard) continue;
-        for (const [index, discard] of game.discarded.entries()) {
+        for (let index = -1; index < game.discarded.length; index++) {
+          if (game.isMinipileActive && index >= 0) continue;
+          if (!game.isMinipileActive && index === -1) continue;
+          const discard = index === -1 ? game.minipile : game.discarded[index];
           if (game.closedPile === index) continue;
           if (game.lockedPiles.includes(index) && ((this.modifier?.actionId !== "lock" && this.number?.actionId !== "disarm") || (secondCard.modifier?.actionId !== "lock" && secondCard.number?.actionId !== "disarm"))) continue;
           if (discard.at(-1)?.number.value === this.number.value + secondCard.number.value) return true;

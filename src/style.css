@@ -13,11 +13,12 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-body {
+body, html {
   margin: 0;
   padding: 0;
   height: 100%;
-  overflow-y: hidden;
+  width: 100%;
+  overflow: hidden;
 }
 
 @media (prefers-color-scheme: light) {
@@ -72,17 +73,17 @@ body {
 }
 
 .cardDiscard0 {
-  left: 30vw;
+  left: 25vw;
 }
 
 .cardDiscard1 {
-  left: 40vw;
+  left: calc(25vw + 9rem);
 }
 .cardDiscard2 {
-  left: 50vw;
+  left: calc(25vw + 18rem);
 }
 .cardDiscard3 {
-  left: 60vw;
+  left: calc(25vw + 27rem);
 }
 
 .cardDiscard.drawPile {
@@ -195,8 +196,94 @@ div.selectedCard {
   border-radius: .5rem;
   position: unset;
   padding: 0;
+  transition: opacity 160ms;
 }
 
 .disabledPile {
   opacity: 0.5;
+}
+
+.colorChooser {
+  position: absolute;
+  top: 30vh;
+  right: 0;
+  padding: 1rem;
+  background: #000022dd;
+  border-bottom-left-radius: .5rem;
+  border-top-left-radius: .5rem;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  font-size: 1.2rem;
+  gap: 1rem;
+  font-weight: 500;
+  transition: right .5s;
+}
+
+.colorChooserInner {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 1rem;
+}
+
+.colorEntry {
+  width: 8vh;
+  height: 8vh;
+  border-radius: .3rem;
+  cursor: pointer;
+}
+
+.colorChooserExit {
+  right: calc(-5rem + -40vh);
+}
+
+.useReflectBox {
+  position: absolute;
+  top: 30vh;
+  right: 0;
+  padding: 1rem;
+  background: #220022dd;
+  border-bottom-left-radius: .5rem;
+  border-top-left-radius: .5rem;
+  color: white;
+  display: flex;
+  gap: 1rem;
+  transition: right 160ms;
+}
+
+.reflectDisplay {
+  height: 10rem;
+  width: 7rem;
+  position: fixed;
+  right: 9rem;
+}
+
+.reflectDisplay .card {
+  cursor: default;
+}
+
+.reflectDisplayGap {
+  height: 10rem;
+  width: 7rem;
+}
+.reflectBoxExit {
+  right: -18rem;
+}
+.reflectBoxPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.useReflectBox button {
+  background-color: #ffaaff;
+  border: 2px solid black;
+  text-align: center;
+  font-size: 1rem;
+  border-radius: .5rem;
+  padding: .2rem;
+  cursor: pointer;
+  transition: background-color .2s;
+}
+.useReflectBox button:hover {
+  background-color: #ee77ee;
 }
