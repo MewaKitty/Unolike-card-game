@@ -86,6 +86,32 @@ body, html {
   left: calc(25vw + 27rem);
 }
 
+.randomOccuranceLabel {
+  position: absolute;
+  top: calc(30vh + 12rem);
+  left: 30vw;
+  transition: opacity 160ms;
+}
+
+.randomOccuranceLabel-1 {
+  left: 12vw;
+  top: calc(30vh + 11.5rem);
+  color: white;
+}
+.randomOccuranceLabel0 {
+  left: 26vw;
+}
+
+.randomOccuranceLabel1 {
+  left: calc(26vw + 9rem);
+}
+.randomOccuranceLabel2 {
+  left: calc(26vw + 18rem);
+}
+.randomOccuranceLabel3 {
+  left: calc(26vw + 27rem);
+}
+
 .cardDiscard.drawPile {
   outline: 2px solid #dddd00;
 }
@@ -181,6 +207,10 @@ div.selectedCard {
   left: calc(-10vw + -10rem);
 }
 
+.minipileExit[hidden] {
+  display: none;
+}
+
 .minipileInfo {
   width: 10vw;
   display: flex;
@@ -237,6 +267,10 @@ div.selectedCard {
   right: calc(-5rem + -40vh);
 }
 
+.colorChooserExit[hidden] {
+  display: none;
+}
+
 .useReflectBox {
   position: absolute;
   top: 30vh;
@@ -269,6 +303,9 @@ div.selectedCard {
 .reflectBoxExit {
   right: -18rem;
 }
+.reflectBoxExit[hidden] {
+  display: none;
+}
 .reflectBoxPanel {
   display: flex;
   flex-direction: column;
@@ -286,4 +323,72 @@ div.selectedCard {
 }
 .useReflectBox button:hover {
   background-color: #ee77ee;
+}
+
+.lotteryRow {
+  display: flex;
+  position: absolute;
+  top: 40vh;
+  left: calc(50vw - 17.5rem);
+  gap: 1rem;
+  z-index: 1;
+}
+
+.lotteryDice {
+  width: 5rem;
+  height: 5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  border: 2px solid black;
+  border-radius: .5rem;
+  box-sizing: border-box;
+}
+
+@keyframes lotteryDice {
+  from {
+    position: fixed;
+    top: calc(100vh + -5rem);
+  }
+  to {
+    position: fixed;
+    top: 40vh;
+  }
+}
+
+.lotteryDarken {
+  width: 100vw;
+  height: 100vh;
+  background: #0000007f;
+  position: fixed;
+  transition: opacity 1s;
+}
+
+@keyframes lotteryOpacityIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes lotteryOpacityOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.lotteryResult {
+  position: absolute;
+  z-index: 1;
+  left: 50vw;
+  transform: translateX(-50%);
+  top: 20vh;
+  color: white;
+  font-size: 2rem;
 }

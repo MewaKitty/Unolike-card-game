@@ -39,9 +39,9 @@ export class Card {
   tags: string[]
   modifier: CardModifier | null
   constructor (hidden?: boolean, tags?: string[]) {
-    const isWild = Math.random() > 0.93;
+    const isWild = Math.random() > 0.53;
     this.color = random(colorData.filter(color => isWild ? color.wild : !color.wild));
-    const isSymbol = true //this.color.wild ? true : Math.random() > 0.8;
+    const isSymbol = this.color.wild ? true : Math.random() > 0.8;
     this.number = isSymbol ? weightedRandom(symbolData.filter(symbol => symbol.wild === this.color.wild)) : random(numberData.filter(number => !number.unlisted));
     if (this.number.color) this.color = colorData.find(color => color.name === this.number.color)!;
     this.hidden = hidden ?? false;
@@ -151,36 +151,16 @@ export class Card {
     return false;
   }
   playablePiles (forOpponent?: boolean): number[] {
-    /*if (game.selectedCards.length > 0) {
-      if (game.selectedCards[0].number.actionId === "discard2Color") {
-        if (this.color !== game.selectedCards[0].color || (game.selectedCards.includes(this) ? false : game.selectedCards.length >= 2)) {
-          return []
-        } else {
-          if (this !== game.selectedCards[0]) game.selectedCards[0].playablePiles()
-        }
-      } else {
-        console.log("a")
-        console.log(this.number !== game.selectedCards[0].number)
-        if (game.selectedCards.length === 1 && game.inventory.length >= 3) {
-          let match = [];
-          for (const [index, discard] of game.discarded.entries()) {
-            if (game.closedPile === index) continue;
-            if (discard.at(-1)?.number === game.selectedCards[0].number && discard.at(-1)?.color === game.selectedCards[0].color) match.push(index);
-          }
-          if (match.length > 0) return match;
-        }
-        if (game.selectedCards.length === 2 && game.selectedCards[0].number !== game.selectedCards[1].number) return [];
-        if (this.number !== game.selectedCards[0].number) {
-          return [];
-        } else {
-          if (this !== game.selectedCards[0]) return game.selectedCards[0].playablePiles()
-        }
-      }
-      return [];
-    }*/
     if (game.drawAmount && (this.number.draw === undefined || this.number.draw === null) && (this.modifier?.draw === undefined || this.modifier?.draw === null)) return [];
     if (game.playersTurn === false && !forOpponent) return [];
     if (game.drawAmount) return [game.drawPile];
+    if (this.number.actionId === "99") {
+      let hasNon99Card = false;
+      for (const card of (forOpponent ? game.opponentHand : game.inventory)) {
+        if (card.number.actionId !== "99") hasNon99Card = true;
+      }
+      if (hasNon99Card) return [];
+    }
     let availablePiles = [];
     for (let i = -1; i < 4; i++) {
       if (i === game.closedPile) continue;
@@ -208,6 +188,16 @@ export class Card {
     
     // Handle the same symbol rule
     if (game.selectedCards[0]?.number === this.number) return true;
+
+    // Handle the exact match rule
+    if (game.selectedCards.length === 1) {
+      for (let index = -1; index < game.discarded.length; index++) {
+        if (game.isMinipileActive && index >= 0) continue;
+        if (!game.isMinipileActive && index === -1) continue;
+        const discard = index === -1 ? game.minipile : game.discarded[index];
+        if (discard.at(-1)?.color === game.selectedCards[0].color && discard.at(-1)?.number === game.selectedCards[0].number) return true;
+      }
+    }
     
     // Handle discard 2 of color
     if (game.selectedCards[0]?.number.actionId === "discard2Color") {

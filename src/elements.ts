@@ -11,10 +11,8 @@ for (let i = 0; i < 4; i++) {
     cardDiscard.classList.add("dragDestination");
     cardDiscard.classList.add("cardDiscard" + i)
     cardDiscard.dataset.index = i + "";
-    console.log(game.discarded)
     cardDiscard.appendChild(game.discarded[i][0].wrapper)
     app.appendChild(cardDiscard);
-    console.log(game.closedPile, "closed")
     if (i === game.closedPile) cardDiscard.classList.add("closed");
 }
 
@@ -97,7 +95,12 @@ minipileInner.dataset.index = "-1";
 minipileOuter.appendChild(minipileInner);
 minipileInner.classList.add("dragDestination");
 minipileOuter.classList.add("minipileExit");
+minipileOuter.hidden = true;
 app.appendChild(minipileOuter);
+
+minipileOuter.addEventListener("transitionend", () => {
+    if (minipileOuter.classList.contains("minipileExit")) minipileOuter.hidden = true;
+})
 
 const colorChooser = document.createElement("div");
 colorChooser.classList.add("colorChooser");
@@ -145,9 +148,14 @@ for (const color of colorData) {
     })
 }
 colorChooser.appendChild(colorChooserInner)
+colorChooser.hidden = true;
 colorChooser.classList.add("colorChooserExit");
 app.appendChild(colorChooser);
 setupDragging();
+
+colorChooser.addEventListener("transitionend", () => {
+    if (colorChooser.classList.contains("colorChooserExit")) colorChooser.hidden = true;
+})
 
 const useReflectBox = document.createElement("div");
 useReflectBox.classList.add("useReflectBox");
@@ -165,7 +173,12 @@ useReflectLabel.textContent = "Use reflect card?"
 reflectBoxPanel.appendChild(useReflectLabel)
 useReflectBox.appendChild(reflectBoxPanel)
 useReflectBox.classList.add("reflectBoxExit")
+useReflectBox.hidden = true;
 app.appendChild(useReflectBox)
+
+useReflectBox.addEventListener("transitionend", () => {
+    if (useReflectBox.classList.contains("reflectBoxExit")) useReflectBox.hidden = true;
+})
 
 const reflectBoxYes = document.createElement("button");
 reflectBoxYes.textContent = "Use";
@@ -173,6 +186,7 @@ reflectBoxPanel.appendChild(reflectBoxYes)
 
 reflectBoxYes.addEventListener("click", async () => {
     useReflectBox.classList.add("reflectBoxExit");
+    const card = (game.reflectPile === -1 ? game.minipile : game.discarded[game.reflectPile]).at(-1);
     (game.reflectPile === -1 ? game.minipile : game.discarded[game.reflectPile]).push(game.reflectCard!);
     game.inventory.splice(game.inventory.indexOf(game.reflectCard!), 1);
     await game.animateElementMovement(game.reflectCard!.wrapper, document.getElementsByClassName("cardDiscard" + game.reflectPile)[0].children[0] as HTMLElement, document.getElementsByClassName("cardDiscard" + game.reflectPile)[0]);
@@ -181,6 +195,7 @@ reflectBoxYes.addEventListener("click", async () => {
     setTimeout(() => document.getElementsByClassName("reflectPlaceholder")[0].remove(), 160)
     game.reflectCard = null;
     updateInventoryPlayability();
+    if (card) await game.applyPlayerDiscardEffects(card, game.reflectPile);
     await game.opponentTurn();
 })
 const reflectBoxNo = document.createElement("button");
@@ -195,4 +210,42 @@ reflectBoxNo.addEventListener("click", async () => {
     game.reflectCard = null;
     updateInventoryPlayability();
     game.reflectRes?.(false);
+})
+
+for (let i = -1; i < 4; i++) {
+    const randomOccuranceLabel = document.createElement("span");
+    randomOccuranceLabel.classList.add("randomOccuranceLabel")
+    randomOccuranceLabel.classList.add("randomOccuranceLabel" + i)
+    app.appendChild(randomOccuranceLabel);
+}
+
+const lotteryRow = document.createElement("div");
+lotteryRow.classList.add("lotteryRow");
+lotteryRow.hidden = true;
+app.appendChild(lotteryRow);
+
+const lotteryDarken = document.createElement("div");
+lotteryDarken.classList.add("lotteryDarken");
+lotteryDarken.hidden = true;
+app.appendChild(lotteryDarken);
+
+lotteryDarken.addEventListener("animationend", e => {
+    if (e.animationName === "lotteryOpacityOut") {
+        lotteryDarken.hidden = true;
+    };
+})
+
+const lotteryResult = document.createElement("div");
+lotteryResult.classList.add("lotteryResult");
+lotteryResult.hidden = true;
+app.appendChild(lotteryResult);
+
+lotteryRow.addEventListener("animationend", e => {
+    if (e.animationName === "lotteryOpacityOut") {
+        lotteryRow.textContent = "";
+        lotteryRow.hidden = true;
+        lotteryRow.style.animation = "";
+        lotteryResult.textContent = "";
+        lotteryResult.hidden = true;
+    };
 })

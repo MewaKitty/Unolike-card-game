@@ -96,7 +96,7 @@ export const setupDragging = () => {
                     };
                     game.selectedCards.length = 0;
                     game.checkForWinCondition();
-                    if (draggedCard.number.actionId !== "skip" && !skip) game.opponentTurn();
+                    if (draggedCard?.number.actionId !== "skip" && !skip) game.opponentTurn();
                     updateInventoryPlayability();
                 }
                 if (destination === cardRack) {

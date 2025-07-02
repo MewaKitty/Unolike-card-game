@@ -62,8 +62,7 @@
     },
     {
         "name": "Draw color",
-        "actionId": "drawColor",
-        "weight": 99
+        "actionId": "drawColor"
     },
     {
         "name": "Discard 2 of color",
@@ -82,7 +81,8 @@
     {
         "name": "Any number",
         "description": "Counts as any number",
-        "actionId": "#"
+        "actionId": "#",
+        "value": 99
     },
     {
         "name": "Random occurance",
@@ -124,7 +124,7 @@
         "wild": true
     },
     {
-        "name": "Draw 1 to 2 color",
+        "name": "Draw 1 to 2 of color",
         "description": "Draw a card; if color differs, draw again.",
         "actionId": "draw1To2Color",
         "wild": true
@@ -134,7 +134,25 @@
         "draw": 0,
         "actionId": "reflect",
         "description": "Reflects any effects including plus cards",
-        "weight": 99,
         "wild": true
+    },
+    {
+        "name": "99",
+        "value": 99,
+        "description": "Cannot be discarded until only 99s are in your inventory",
+        "actionId": "99",
+        "wild": true
+    },
+    {
+        "name": "Give away color",
+        "actionId": "giveAwayColor",
+        "wild": true
+    },
+    {
+        "name": "Lottery",
+        "description": "Every 1 in 243 lottery cards win! (not in real life ofc)",
+        "wild": true,
+        "actionId": "lottery",
+        "weight": 99
     }
 ]

@@ -1,6 +1,6 @@
 import { Card } from "./cards.ts";
 import type { CardColor } from "./cards.ts";
-import { random, shuffleArray, randomInteger } from "./utils.ts";
+import { random, shuffleArray, randomInteger, wait } from "./utils.ts";
 import { getDraggedCard } from "./dragging.ts";
 import numberData from "./data/numbers.json";
 import colorData from "./data/colors.json";
@@ -63,8 +63,6 @@ export class Game {
             const cardDiscard = document.getElementsByClassName("cardDiscard" + i)[0];
             cardDiscard.textContent = "";
             if (pileContents.length > 0) cardDiscard.appendChild(pileContents.at(-1)!.wrapper)
-            console.log(i)
-            console.log(pileContents)
             if (!pileContents.at(-1)?.tags.includes("discarded")) pileContents.at(-1)?.tags.push("discarded")
             if (i === -1 && !pileContents.at(-1)?.tags.includes("minipile")) pileContents.at(-1)?.tags.push("minipile")
             pileContents.at(-1)?.element.classList.remove("unplayable");
@@ -291,7 +289,7 @@ export class Game {
             pickupPile.appendChild(game.pickupCard.wrapper)
         }
     }
-    discardCard(card: Card, pile: number) {
+    async discardCard(card: Card, pile: number) {
         const cardDiscard = document.getElementsByClassName("cardDiscard" + pile)[0];
         cardDiscard.textContent = "";
         cardDiscard.appendChild(card.wrapper)
@@ -306,7 +304,6 @@ export class Game {
         updateInventoryPlayability();
         game.updateCardDiscard();
         if (game.inventory.length === 0 || game.opponentHand.length === 0) return;
-        const pileContents = pile === -1 ? game.minipile : game.discarded[pile];
         if (card.number.draw) {
             game.drawAmount += card.number.draw;
             game.drawPile = pile;
@@ -316,6 +313,13 @@ export class Game {
             game.drawAmount += card.modifier?.draw;
             game.drawPile = pile;
             document.getElementsByClassName("drawAmountText")[0].textContent = "+" + game.drawAmount;
+        }
+        return await this.applyPlayerDiscardEffects(card, pile);
+    }
+    async applyPlayerDiscardEffects (card: Card, pile: number) {
+        const pileContents = pile === -1 ? game.minipile : game.discarded[pile];
+        for (let i = -1; i < 4; i++) {
+            document.getElementsByClassName("randomOccuranceLabel" + i)[0].textContent = ""
         }
         if (card.number.actionId === "swap") {
             const playersHand = Array.from(game.inventory);
@@ -380,14 +384,10 @@ export class Game {
         }
         if (card.number?.actionId === "drawColor") {
             game.playersTurn = false;
-            (async () => {
-                for (let i = 0; i < 25; i++) {
-                    const newCard = await this.opponentPickup();
-                    if (newCard.color === card.color) break;
-                }
-                await game.opponentTurn();
-            })();
-            return true;
+            for (let i = 0; i < 25; i++) {
+                const newCard = await this.opponentPickup();
+                if (newCard.color === card.color) break;
+            }
         }
         if (card.modifier?.actionId === "randomOccurance") {
             switch (randomInteger(1, 8)) {
@@ -398,6 +398,7 @@ export class Game {
                         game.inventory.splice(game.inventory.indexOf(game.inventory[0]), 1)
                         updateInventoryPlayability();
                     }
+                    document.getElementsByClassName("randomOccuranceLabel" + pile)[0].textContent = "Discard all but 2"
                     break;
                 case 2:
                     const number = game.inventory[0].number;
@@ -409,6 +410,7 @@ export class Game {
                             updateInventoryPlayability();
                         }
                     }
+                    document.getElementsByClassName("randomOccuranceLabel" + pile)[0].textContent = "Discard number"
                     break;
                 case 3:
                     const color = game.inventory[0].color;
@@ -420,17 +422,16 @@ export class Game {
                             updateInventoryPlayability();
                         }
                     }
+                    document.getElementsByClassName("randomOccuranceLabel" + pile)[0].textContent = "Discard color"
                     break;
                 case 4:
                     game.playersTurn = false;
-                    (async () => {
-                        for (let i = 0; i < 25; i++) {
-                            const newCard = await this.opponentPickup();
-                            if (newCard.color === card.color) break;
-                        }
-                        await game.opponentTurn();
-                    })();
-                    return true;
+                    for (let i = 0; i < 25; i++) {
+                        const newCard = await this.opponentPickup();
+                        if (newCard.color === card.color) break;
+                    }
+                    document.getElementsByClassName("randomOccuranceLabel" + pile)[0].textContent = "Draw until color"
+                    break;
                 case 5:
                     const playersHand = Array.from(game.inventory);
                     const opponentHand = Array.from(game.opponentHand);
@@ -439,8 +440,10 @@ export class Game {
                     game.opponentHand.length = 0;
                     for (const card of playersHand) game.opponentHand.push(card);
                     this.updateHands();
+                    document.getElementsByClassName("randomOccuranceLabel" + pile)[0].textContent = "Swap hands"
                     break;
                 case 6:
+                    document.getElementsByClassName("randomOccuranceLabel" + pile)[0].textContent = "Nothing"
                     break;
                 case 7:
                     const highestPlayer = Array.from(game.inventory).sort((a, b) => b.number?.value ?? -1 - (a.number?.value ?? -1))[0]
@@ -456,6 +459,7 @@ export class Game {
                         updateInventoryPlayability();
                         highestOpponent.wrapper.remove();
                     }
+                    document.getElementsByClassName("randomOccuranceLabel" + pile)[0].textContent = "Discard highest card"
                     break;
                 case 8:
                     if (Math.random() > 0.5) {
@@ -469,6 +473,7 @@ export class Game {
                         game.opponentHand.splice(game.opponentHand.indexOf(game.opponentHand[0]), 1)
                         updateInventoryPlayability();
                     }
+                    document.getElementsByClassName("randomOccuranceLabel" + pile)[0].textContent = "Discard random card"
             }
         }
         if (card.number.actionId !== "disarm" && card.number.actionId !== "giveaway" && pileContents.at(-2)?.modifier?.actionId === "overload") {
@@ -495,23 +500,29 @@ export class Game {
         if (card.number?.actionId === "randomOccurance") {
             switch (randomInteger(1, 8)) {
                 case 1:
+                    document.getElementsByClassName("randomOccuranceLabel" + pile)[0].textContent = "Occurance disappeared?"
                     break;
                 case 2:
+                    document.getElementsByClassName("randomOccuranceLabel" + pile)[0].textContent = "Ye skip a turn"
                     return true;
                 case 3:
                     game.drawAmount = 2;
                     game.drawPile = pile;
+                    document.getElementsByClassName("randomOccuranceLabel" + pile)[0].textContent = "DRAW 2!!!"
                     break;
                 case 4:
                     game.drawAmount = 1;
                     game.drawPile = pile;
+                    document.getElementsByClassName("randomOccuranceLabel" + pile)[0].textContent = "Draw 1"
                     break;
                 case 5:
                     game.opponentPickup();
+                    document.getElementsByClassName("randomOccuranceLabel" + pile)[0].textContent = "Pickup time"
                     return true;
                 case 6:
                     game.drawAmount = 2;
                     game.drawPile = pile;
+                    document.getElementsByClassName("randomOccuranceLabel" + pile)[0].textContent = "Draw 2 but for YOU"
                     return true;
             }
         }
@@ -524,12 +535,14 @@ export class Game {
             document.getElementsByClassName("minipileInner")[0].textContent = "";
             document.getElementsByClassName("minipileInner")[0].appendChild(minipileCard.wrapper)
             game.minipile.push(minipileCard);
+            (document.getElementsByClassName("minipileOuter")[0] as HTMLElement).hidden = false;
             document.getElementsByClassName("minipileOuter")[0].classList.remove("minipileExit");
             minipileCard.element.classList.remove("unplayable")
             this.updateCardDiscard();
             updateInventoryPlayability();
         }
         if (card.number.actionId === "draw3DiscardColor" || card.number.actionId === "draw1To2Color") {
+            (document.getElementsByClassName("colorChooser")[0] as HTMLDivElement).hidden = false;
             document.getElementsByClassName("colorChooser")[0].classList.remove("colorChooserExit");
             this.colorChooserActive = true;
             this.colorChooserPile = pile;
@@ -537,11 +550,74 @@ export class Game {
             updateInventoryPlayability();
             return true;
         }
+        if (card.number?.actionId === "giveAwayColor") {
+            const color = game.inventory[0].color;
+            for (const secondCard of game.inventory) {
+                if (secondCard.color === color) {
+                    pileContents.unshift(game.inventory[0]);
+                    //game.inventory[0].wrapper.remove();
+                    game.inventory.splice(game.inventory.indexOf(game.inventory[0]), 1)
+                    game.opponentHand.push(secondCard);
+                    //document.getElementsByClassName("opponentHand")[0].appendChild(secondCard.wrapper)
+                    await this.animateElementMovement(secondCard.wrapper, document.getElementsByClassName("opponentHand")[0] as HTMLElement, document.getElementsByClassName("opponentHand")[0])
+                    updateInventoryPlayability();
+                }
+            }
+        }
+        if (card.number?.actionId === "lottery") {
+            const lotteryDarken = document.getElementsByClassName("lotteryDarken")[0] as HTMLDivElement;
+            lotteryDarken.hidden = false;
+            lotteryDarken.style.animation = "1s lotteryOpacityIn";
+
+            (document.getElementsByClassName("lotteryRow")[0] as HTMLElement).hidden = false;
+            
+            const targetNumber = randomInteger(1, 5);
+            const lotteryDice = document.createElement("div");
+            lotteryDice.classList.add("lotteryDice");
+            lotteryDice.textContent = targetNumber + "";
+            lotteryDice.style.animation = "1s lotteryDice"
+            lotteryDice.style.background = colorData[targetNumber].color;
+            document.getElementsByClassName("lotteryRow")[0].appendChild(lotteryDice);
+
+            let isWinning = true;
+            for (let i = 0; i < 5; i++) {   
+                await wait(1000);
+                const number = randomInteger(1, 6);
+                const lotteryDice = document.createElement("div");
+                lotteryDice.classList.add("lotteryDice");
+                lotteryDice.textContent = number + "";
+                lotteryDice.style.animation = "1s lotteryDice"
+                if (number === 6) {
+                    lotteryDice.style.background = colorData.find(color => color.wild)!.color;
+                    lotteryDice.style.color = colorData.find(color => color.wild)!.text ?? "";
+                } else lotteryDice.style.background = colorData[number].color;
+                lotteryDice.style.left = `calc(50vw - 17.5rem + ${(i + 1) * 6}rem)`
+                document.getElementsByClassName("lotteryRow")[0].appendChild(lotteryDice)
+                if (number !== targetNumber && number !== 6) isWinning = false;
+            }
+            await wait(1000);
+            const resultDiv = document.getElementsByClassName("lotteryResult")[0] as HTMLDivElement;
+            resultDiv.hidden = false;
+            resultDiv.style.animation = ".5s lotteryOpacityIn";
+            if (isWinning) {
+                resultDiv.textContent = "You won!"
+            } else {
+                resultDiv.textContent = "Better luck next time!"
+            }
+            await wait(1500);
+            lotteryDarken.style.animation = "1s lotteryOpacityOut";
+            resultDiv.style.animation = "1s lotteryOpacityOut";
+            (document.getElementsByClassName("lotteryRow")[0] as HTMLElement).style.animation = "1s lotteryOpacityOut";
+        }
     }
     async applyOpponentDiscardEffects(card: Card, pile: number) {
         if (game.inventory.length === 0 || game.opponentHand.length === 0) return;
+        for (let i = -1; i < 4; i++) {
+            document.getElementsByClassName("randomOccuranceLabel" + i)[0].textContent = ""
+        }
         const pileContents = pile === -1 ? game.minipile : game.discarded[pile];
         if (card.number.actionId === "swap") {
+            if (await this.checkForReflectStatus(pile)) return;
             const playersHand = Array.from(game.inventory);
             const opponentHand = Array.from(game.opponentHand);
             game.inventory.length = 0;
@@ -551,6 +627,7 @@ export class Game {
             this.updateHands();
         }
         if (card.number.actionId === "shuffle") {
+            if (await this.checkForReflectStatus(pile)) return;
             const playersHandCount = game.inventory.length;
             const opponentHandCount = game.opponentHand.length;
             const allCards = [...game.inventory, ...game.opponentHand];
@@ -566,7 +643,7 @@ export class Game {
                 game.drawAmount += 4;
                 game.drawPile = pile;
                 document.getElementsByClassName("drawAmountText")[0].textContent = "+" + game.drawAmount;
-                game.opponentTurn();
+                await game.opponentTurn();
             } else {
                 game.drawAmount += 4;
                 game.drawPile = pile;
@@ -618,6 +695,7 @@ export class Game {
             })();
         }
         if (card.modifier?.actionId === "randomOccurance") {
+            if (await this.checkForReflectStatus(pile)) return;
             switch (randomInteger(1, 8)) {
                 case 1:
                     while (game.opponentHand.length > 2) {
@@ -626,6 +704,7 @@ export class Game {
                         game.opponentHand.splice(game.opponentHand.indexOf(game.opponentHand[0]), 1)
                         updateInventoryPlayability();
                     }
+                    document.getElementsByClassName("randomOccuranceLabel" + pile)[0].textContent = "Discard all but 2"
                     break;
                 case 2:
                     const number = game.opponentHand[0].number;
@@ -637,6 +716,7 @@ export class Game {
                             updateInventoryPlayability();
                         }
                     }
+                    document.getElementsByClassName("randomOccuranceLabel" + pile)[0].textContent = "Discard number"
                     break;
                 case 3:
                     const color = game.opponentHand[0].color;
@@ -648,6 +728,7 @@ export class Game {
                             updateInventoryPlayability();
                         }
                     }
+                    document.getElementsByClassName("randomOccuranceLabel" + pile)[0].textContent = "Discard color"
                     break;
                 case 4:
                     (async () => {
@@ -665,6 +746,7 @@ export class Game {
                             if (newCard.color === card.color) return;
                         }
                     })();
+                    document.getElementsByClassName("randomOccuranceLabel" + pile)[0].textContent = "Keep drawing until color"
                     break;
                 case 5:
                     const playersHand = Array.from(game.inventory);
@@ -674,8 +756,10 @@ export class Game {
                     game.opponentHand.length = 0;
                     for (const card of playersHand) game.opponentHand.push(card);
                     this.updateHands();
+                    document.getElementsByClassName("randomOccuranceLabel" + pile)[0].textContent = "Swap?"
                     break;
                 case 6:
+                    document.getElementsByClassName("randomOccuranceLabel" + pile)[0].textContent = "No occurance for you"
                     break;
                 case 7:
                     const highestPlayer = Array.from(game.inventory).sort((a, b) => b.number?.value ?? -1 - (a.number?.value ?? -1))[0]
@@ -691,6 +775,7 @@ export class Game {
                         updateInventoryPlayability();
                         highestOpponent.wrapper.remove();
                     }
+                    document.getElementsByClassName("randomOccuranceLabel" + pile)[0].textContent = "Bye that high card"
                     break;
                 case 8:
                     if (Math.random() > 0.5) {
@@ -704,13 +789,14 @@ export class Game {
                         game.opponentHand.splice(game.opponentHand.indexOf(game.opponentHand[0]), 1)
                         updateInventoryPlayability();
                     }
+                    document.getElementsByClassName("randomOccuranceLabel" + pile)[0].textContent = "Oooo I stole that card"
             }
         }
         if (card.number.actionId !== "disarm" && card.number.actionId !== "giveaway" && pileContents.at(-2)?.modifier?.actionId === "overload") {
             game.drawAmount += randomInteger(1, 4);
             game.drawPile = pile;
             document.getElementsByClassName("drawAmountText")[0].textContent = "+" + game.drawAmount;
-            game.opponentTurn();
+            await game.opponentTurn();
         }
         if (card.number.actionId === "giveaway" && pileContents.at(-2)?.modifier?.actionId === "overload") {
             game.drawAmount += randomInteger(1, 4);
@@ -718,6 +804,7 @@ export class Game {
             document.getElementsByClassName("drawAmountText")[0].textContent = "+" + game.drawAmount;
         }
         if (card.modifier?.actionId === "-2") {
+            if (await this.checkForReflectStatus(pile)) return;
             for (let i = 0; i < 2; i++) {
                 const oldCard = game.inventory.shift()!;
                 oldCard?.wrapper.remove();
@@ -726,6 +813,7 @@ export class Game {
             }
         }
         if (card.number?.actionId === "randomOccurance") {
+            if (await this.checkForReflectStatus(pile)) return;
             switch (randomInteger(1, 8)) {
                 case 1:
                     break;
@@ -756,12 +844,14 @@ export class Game {
             document.getElementsByClassName("minipileInner")[0].textContent = "";
             document.getElementsByClassName("minipileInner")[0].appendChild(minipileCard.wrapper)
             game.minipile.push(minipileCard);
+            (document.getElementsByClassName("minipileOuter")[0] as HTMLElement).hidden = false;
             document.getElementsByClassName("minipileOuter")[0].classList.remove("minipileExit");
             minipileCard.element.classList.remove("unplayable")
             this.updateCardDiscard();
             updateInventoryPlayability();
         }
         if (card.number.actionId === "draw3DiscardColor") {
+            if (await this.checkForReflectStatus(pile)) return;
             for (let i = 0; i < 3; i++) {
                 await this.playerForcePickup();
             }
@@ -779,6 +869,7 @@ export class Game {
             }
         }
         if (card.number.actionId === "draw1To2Color") {
+            if (await this.checkForReflectStatus(pile)) return;
             const card = await game.playerForcePickup();
             const color: CardColor = random(colorData);
             if (card.color.name !== color.name) {
@@ -881,6 +972,7 @@ export class Game {
             for (const card of game.inventory) {
                 if (card.number.actionId === "reflect") {
                     card.element.style.zIndex = "1";
+                    (document.getElementsByClassName("useReflectBox")[0] as HTMLDivElement).hidden = false;
                     document.getElementsByClassName("useReflectBox")[0].classList.remove("reflectBoxExit")
                     const placeholderDiv = document.createElement("div");
                     placeholderDiv.classList.add("reflectPlaceholder")
@@ -903,7 +995,6 @@ export const game = new Game();
 
 export const updateInventoryPlayability = () => {
     for (const card of game.inventory) {
-    console.log("playability", card, card.isPlayable())
         if (card.isPlayable()) {
             card.element.classList.remove("unplayable")
         } else {
