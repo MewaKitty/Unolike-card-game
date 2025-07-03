@@ -9,6 +9,7 @@ export const getDraggedCard = () => draggedCard;
 
 export const setupDragging = () => {
     const cardRack = document.getElementsByClassName("cardRack")[0];
+    addEventListener("pointerdown", () => game.wasDragging = false)
     addEventListener("pointermove", e => {
         if (!draggedCard) return;
         if (!draggedCard.element.classList.contains("dragging")) {
@@ -39,6 +40,7 @@ export const setupDragging = () => {
                 const pile = +(destination as HTMLDivElement).dataset.index!;
                 if ((destination.classList.contains("cardDiscard") || destination.classList.contains("minipileInner")) && !(game.selectedCards.includes(draggedCard) ? game.playableTwins() : draggedCard.playablePiles()).includes(pile)) return;
                 destination.classList.add("dragTarget")
+                game.wasDragging = true;
             } else {
                 destination.classList.remove("dragTarget")
             }
@@ -95,7 +97,7 @@ export const setupDragging = () => {
                         if (await game.discardCard(draggedCard, pile)) skip = true;
                     };
                     game.selectedCards.length = 0;
-                    game.checkForWinCondition();
+                    game.checkForWinCondition(false);
                     if (draggedCard?.number.actionId !== "skip" && !skip) game.opponentTurn();
                     updateInventoryPlayability();
                 }
@@ -109,6 +111,7 @@ export const setupDragging = () => {
                             game.addToRack(newCard)
                         }
                         game.drawAmount = 0;
+                        document.getElementsByClassName("drawAmountText")[0].textContent = "";
                         if (draggedCard.tags.includes("minipile")) {
                             for (const card of game.minipile) {
                                 game.addToRack(card);
@@ -120,9 +123,10 @@ export const setupDragging = () => {
                             document.getElementsByClassName("minipileOuter")[0].classList.add("minipileExit");
                             updateInventoryPlayability();
                             game.updateCardDiscard();
+                            game.opponentTurn();
                         }
-                        document.getElementsByClassName("drawAmountText")[0].textContent = "";
-                        game.opponentTurn();
+                        updateInventoryPlayability();
+                        game.updateCardDiscard();
                     };
                 }
             }
@@ -133,7 +137,6 @@ export const setupDragging = () => {
         dragGap.x = -1;
         dragGap.y = -1;
         dragGaps.length = 0;
-        console.info("sc", selectedCards)
         for (const card of selectedCards) {
             card.element.classList.remove("dragging");
             card.element.style.left = "";

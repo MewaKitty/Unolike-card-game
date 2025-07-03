@@ -152,7 +152,51 @@
         "name": "Lottery",
         "description": "Every 1 in 243 lottery cards win! (not in real life ofc)",
         "wild": true,
-        "actionId": "lottery",
-        "weight": 99
+        "actionId": "lottery"
+    },
+    {
+        "name": "Semi-blank",
+        "description": "Any card can be placed on top of this",
+        "color": "Purple",
+        "actionId": "purpleBlank"
+    },
+    {
+        "name": "+4",
+        "draw": 4,
+        "description": "Now... as a normal card?"
+    },
+    {
+        "name": "Color draw",
+        "actionId": "colorDraw",
+        "wild": true
+    },
+    {
+        "name": "+6",
+        "draw": 6,
+        "wild": true,
+        "description": "Worse than a +5!"
+    },
+    {
+        "name": "+10",
+        "draw": 10,
+        "wild": true,
+        "description": "Better than a +5!"
+    },
+    {
+        "name": "Blue random occurances",
+        "actionId": "blueRandom",
+        "description": "This is... the same thing???"
+    },
+    {
+        "name": "Blue random occurances",
+        "actionId": "blueRandom",
+        "description": "This is... the same thing???",
+        "wild": true
+    },
+    {
+        "name": "Reobtain a discarded card",
+        "actionId": "reobtain",
+        "weight": 99,
+        "wild": true
     }
 ]

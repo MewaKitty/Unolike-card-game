@@ -29,7 +29,7 @@ export const pickupPile = document.createElement("div");
 pickupPile.classList.add("pickupPile");
 const pickupLabel = document.createElement("span");
 pickupPile.appendChild(pickupLabel);
-pickupLabel.textContent = "Pick up here";
+pickupLabel.textContent = "Pick up here until you can discard a card";
 pickupPile.appendChild((game.pickupCard).wrapper)
 app.appendChild(pickupPile);
 
@@ -40,7 +40,9 @@ pickupPile.addEventListener("pointerdown", async () => {
 pickupPile.addEventListener("pointerup", async () => {
     if (Date.now() - pointerDownTime > 350) return;
     if (!game.playersTurn) return;
-    game.playersTurn = false;
+    console.log(game.wasDragging)
+    if (game.wasDragging) return;
+    //game.playersTurn = false;
     const placeholderDiv = document.createElement("div");
     placeholderDiv.classList.add("wrapper");
     cardRack.appendChild(placeholderDiv)
@@ -56,7 +58,7 @@ pickupPile.addEventListener("pointerup", async () => {
     }
     game.drawAmount = 0;
     document.getElementsByClassName("drawAmountText")[0].textContent = "";
-    game.opponentTurn();
+    //game.opponentTurn();
 })
 
 const opponentHand = document.createElement("div");
@@ -65,6 +67,11 @@ for (const card of game.opponentHand) {
     opponentHand.appendChild(card.wrapper);
 }
 app.appendChild(opponentHand);
+
+const opponentHandLabel = document.createElement("span");
+opponentHandLabel.classList.add("opponentHandLabel");
+opponentHandLabel.textContent = "Dealer's cards";
+app.appendChild(opponentHandLabel);
 
 const drawAmountText = document.createElement("span");
 drawAmountText.classList.add("drawAmountText")
@@ -141,6 +148,22 @@ for (const color of colorData) {
                 if (card.color.name !== color.name) {
                     await game.opponentPickup();
                 }
+                break;
+            case "colorDraw":
+                const placeholderDiv = document.createElement("div");
+                placeholderDiv.classList.add("wrapper");
+                document.getElementsByClassName("cardRack")[0].appendChild(placeholderDiv)
+                setTimeout(() => placeholderDiv.remove(), 200)
+                await game.animateElementMovement(game.pickupCard.element, placeholderDiv, game.pickupCard.wrapper)
+                const pickupCard = game.pickupCard
+                game.addToRack(game.pickupCard)
+                if (pickupCard.color === color) return;
+                for (let i = 0; i < 25; i++) {
+                    const newCard = new Card();
+                    game.addToRack(newCard);
+                    if (newCard.color === color) return;
+                }
+                await game.opponentTurn();
         }
         game.playersTurn = true;
         updateInventoryPlayability();
@@ -248,4 +271,30 @@ lotteryRow.addEventListener("animationend", e => {
         lotteryResult.textContent = "";
         lotteryResult.hidden = true;
     };
+})
+
+const resultScreen = document.createElement("div");
+resultScreen.classList.add("resultScreen");
+resultScreen.hidden = true;
+app.appendChild(resultScreen);
+
+const playerCardCount = document.createElement("div");
+playerCardCount.classList.add("playerCardCount");
+playerCardCount.textContent = "7";
+app.appendChild(playerCardCount)
+
+const opponentCardCount = document.createElement("div");
+opponentCardCount.classList.add("opponentCardCount");
+opponentCardCount.textContent = "7";
+app.appendChild(opponentCardCount)
+
+const reobtainRack = document.createElement("div");
+reobtainRack.classList.add("reobtainRack");
+app.appendChild(reobtainRack);
+
+reobtainRack.addEventListener("animationend", e => {
+    if (e.animationName === "moveRightOut") {
+        reobtainRack.hidden = true;
+        reobtainRack.textContent = "";
+    }
 })

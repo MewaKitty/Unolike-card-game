@@ -26,7 +26,8 @@ interface CardNumber {
 interface CardModifier {
   name: string,
   actionId?: string,
-  draw?: number
+  draw?: number,
+  unlisted?: boolean
 }
 
 export class Card {
@@ -39,15 +40,15 @@ export class Card {
   tags: string[]
   modifier: CardModifier | null
   constructor (hidden?: boolean, tags?: string[]) {
-    const isWild = Math.random() > 0.53;
+    const isWild = Math.random() > 0.93;
     this.color = random(colorData.filter(color => isWild ? color.wild : !color.wild));
     const isSymbol = this.color.wild ? true : Math.random() > 0.8;
     this.number = isSymbol ? weightedRandom(symbolData.filter(symbol => symbol.wild === this.color.wild)) : random(numberData.filter(number => !number.unlisted));
     if (this.number.color) this.color = colorData.find(color => color.name === this.number.color)!;
     this.hidden = hidden ?? false;
     this.tags = tags ?? [];
-    this.modifier = (this.number.description && !this.number.draw) ? null : (Math.random() > 0.5 ? weightedRandom(modifierData) : null)
-
+    this.modifier = (this.number.description && !this.number.draw) ? null : (Math.random() > 0.5 ? weightedRandom(modifierData.filter(modifier => !modifier.unlisted)) : null)
+    if (this.number.value === 0 || this.number.value === 7) this.modifier = modifierData.find(modifier => modifier.actionId === "swap") ?? null;
     const wrapper = document.createElement("div");
     wrapper.classList.add("cardWrapper");
     const div = document.createElement("div");
@@ -148,6 +149,7 @@ export class Card {
     if (card.color === this.color) return true;
     if (this.color.wild) return true;
     if (card.color.wild) return true;
+    if (card.number.actionId === "purpleBlank") return true;
     return false;
   }
   playablePiles (forOpponent?: boolean): number[] {
@@ -175,6 +177,7 @@ export class Card {
   }
   isPlayable () {
     if (game.colorChooserActive) return false;
+    if (game.reobtainChooserActive) return false;
     if (game.reflectCard === this) return true;
     if (game.reflectCard) return false;
 

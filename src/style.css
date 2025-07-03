@@ -61,6 +61,8 @@ body, html {
   flex-direction: column;
   gap: .3rem;
   cursor: pointer;
+  width: 9rem;
+  box-sizing: border-box;
 }
 
 .cardDiscard {
@@ -157,6 +159,11 @@ body, html {
   margin-right: 0;
 }
 
+.opponentHandLabel {
+  position: absolute;
+  top: 12rem;
+  right: 5rem;
+}
 .cardDiscard .card {
   cursor: default;
 }
@@ -248,6 +255,7 @@ div.selectedCard {
   gap: 1rem;
   font-weight: 500;
   transition: right .5s;
+  z-index: 2;
 }
 
 .colorChooserInner {
@@ -344,6 +352,7 @@ div.selectedCard {
   border: 2px solid black;
   border-radius: .5rem;
   box-sizing: border-box;
+  z-index: 3;
 }
 
 @keyframes lotteryDice {
@@ -363,6 +372,7 @@ div.selectedCard {
   background: #0000007f;
   position: fixed;
   transition: opacity 1s;
+  z-index: 2;
 }
 
 @keyframes lotteryOpacityIn {
@@ -385,10 +395,107 @@ div.selectedCard {
 
 .lotteryResult {
   position: absolute;
-  z-index: 1;
+  z-index: 2;
   left: 50vw;
   transform: translateX(-50%);
   top: 20vh;
   color: white;
   font-size: 2rem;
+}
+
+.playerCardCount {
+  position: absolute;
+  bottom: 13rem;
+  left: 1rem;
+  padding: 1rem;
+  background: #ccc;
+  width: 1rem;
+  height: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid black;
+  border-radius: 1rem;
+}
+
+.opponentCardCount {
+  position: absolute;
+  top: 12rem;
+  right: 1rem;
+  padding: 1rem;
+  background: #ccc;
+  width: 1rem;
+  height: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid black;
+  border-radius: 1rem;
+}
+
+.resultScreen {
+  position: fixed;
+  width: 80vw;
+  height: 80vh;
+  background: white;
+  border: 2px solid black;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+}
+
+.resultScreen[hidden] {
+  display: none;
+}
+
+.reobtainRack {
+  position: absolute;
+  bottom: 13rem;
+  right: 0;
+  padding: 1rem;
+  background: #333300;
+  display: flex;
+  gap: 1rem;
+  width: fit-content;
+  border-top-left-radius: 1rem;
+  border-bottom-left-radius: 1rem;
+}
+
+.reobtainRack[hidden] {
+  display: none;
+}
+
+@keyframes moveRightOut {
+  from {
+    right: 0;
+  }
+  to {
+    right: -38vw;
+  }
+}
+
+@keyframes moveLeftIn {
+  from {
+    right: -38vw;
+  }
+  to {
+    right: 0;
+  }
+}
+
+.cardEntry {
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+}
+
+.cardEntry button {
+  background: #ffffbb;
+  border: 1px solid black;
+  border-radius: .3rem;
 }

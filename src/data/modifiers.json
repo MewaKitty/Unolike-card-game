@@ -13,7 +13,8 @@
     {
         "name": "Random occurance",
         "actionId": "randomOccurance",
-        "weight": 5
+        "weight": 5,
+        "modifies": [1,2,3,4,5]
     },
     {
         "name": "Landmine",
@@ -26,5 +27,16 @@
     {
         "name": "Lock pile to locks and wilds",
         "actionId": "lock"
+    },
+    {
+        "name": "Draw 3 cards",
+        "draw": 3,
+        "modifies": 3,
+        "weight": 1
+    },
+    {
+        "name": "Swap hands",
+        "actionId": "swap",
+        "unlisted": true
     }
 ]
