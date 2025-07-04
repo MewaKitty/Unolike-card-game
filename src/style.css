@@ -179,7 +179,7 @@ div.selectedCard {
 
 .drawAmountText {
   position: absolute;
-  top: 30vh;
+  top: 55vh;
   left: 22vw;
   font-weight: bold;
   font-size: 3rem;
@@ -339,7 +339,7 @@ div.selectedCard {
   top: 40vh;
   left: calc(50vw - 17.5rem);
   gap: 1rem;
-  z-index: 1;
+  z-index: 3;
 }
 
 .lotteryDice {
@@ -498,4 +498,20 @@ div.selectedCard {
   background: #ffffbb;
   border: 1px solid black;
   border-radius: .3rem;
+}
+
+.playerLiveCounter {
+  position: fixed;
+  right: 1rem;
+  bottom: 14rem;
+  font-weight: bolder;
+  font-size: 1.5;
+}
+
+.opponentLiveCounter {
+  position: fixed;
+  right: 7em;
+  top: 14rem;
+  font-weight: bolder;
+  font-size: 1.5;
 }

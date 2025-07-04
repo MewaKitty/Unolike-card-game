@@ -42,7 +42,7 @@ export class Card {
   constructor (hidden?: boolean, tags?: string[]) {
     const isWild = Math.random() > 0.93;
     this.color = random(colorData.filter(color => isWild ? color.wild : !color.wild));
-    const isSymbol = this.color.wild ? true : Math.random() > 0.8;
+    const isSymbol = this.color.wild ? true : Math.random() > 0.5;
     this.number = isSymbol ? weightedRandom(symbolData.filter(symbol => symbol.wild === this.color.wild)) : random(numberData.filter(number => !number.unlisted));
     if (this.number.color) this.color = colorData.find(color => color.name === this.number.color)!;
     this.hidden = hidden ?? false;
@@ -61,6 +61,14 @@ export class Card {
     this.wrapper = wrapper;
     let pointerDownTime = 0;
     div.addEventListener("pointerdown", e => {
+      updateInventoryPlayability();
+      /*if (this.tags.includes("pickup")) {
+        let hasPlayable = false;
+        for (const card of game.inventory) {
+            if (card.isPlayable()) hasPlayable = true;
+        }
+        if (hasPlayable) return;
+      }*/
       if (!this.tags.includes("pickup") && !wrapper.parentElement?.classList.contains("minipileInner") && !this.isPlayable()) return;
       if (this.tags.includes("discarded") && !wrapper.parentElement?.classList.contains("minipileInner")) return;
       if (!this.tags.includes("pickup") && !wrapper.parentElement?.classList.contains("minipileInner") && wrapper.parentElement !== document.getElementsByClassName("cardRack")[0]) return;
@@ -224,6 +232,7 @@ export class Card {
         if (game.lockedPiles.includes(index) && game.checkLockApplication() && ((this.modifier?.actionId !== "lock" && this.number?.actionId !== "disarm") || (game.selectedCards[0].modifier?.actionId !== "lock" && game.selectedCards[0].number?.actionId !== "disarm"))) continue;
         if (game.selectedCards[0].number.value! + this.number.value === discard.at(-1)!.number.value) return true;
         if (game.selectedCards[0].number.actionId === "#" && numberData.map(number => number.value).includes(discard.at(-1)?.number.value! - this.number.value)) return true;
+        if (this.number.actionId === "#" && numberData.map(number => number.value).includes(discard.at(-1)?.number.value! - game.selectedCards[0].number.value)) return true;
       }
       return false;
     };

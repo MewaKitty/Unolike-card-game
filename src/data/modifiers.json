@@ -25,7 +25,7 @@
         "actionId": "-2"
     },
     {
-        "name": "Lock pile to locks and wilds",
+        "name": "Lock pile",
         "actionId": "lock"
     },
     {

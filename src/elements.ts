@@ -35,6 +35,11 @@ app.appendChild(pickupPile);
 
 let pointerDownTime = 0
 pickupPile.addEventListener("pointerdown", async () => {
+    let hasPlayable = false;
+    for (const card of game.inventory) {
+        if (card.isPlayable()) hasPlayable = true;
+    }
+    if (hasPlayable) return;
     pointerDownTime = Date.now();
 });
 pickupPile.addEventListener("pointerup", async () => {
@@ -164,8 +169,12 @@ for (const color of colorData) {
                     if (newCard.color === color) return;
                 }
                 await game.opponentTurn();
+                break;
+            case "promise":
+                game.colorChooserPromise?.(color);
         }
         game.playersTurn = true;
+        game.colorChooserActive = false;
         updateInventoryPlayability();
         game.updateCardDiscard();
     })
@@ -290,6 +299,7 @@ app.appendChild(opponentCardCount)
 
 const reobtainRack = document.createElement("div");
 reobtainRack.classList.add("reobtainRack");
+reobtainRack.hidden = true;
 app.appendChild(reobtainRack);
 
 reobtainRack.addEventListener("animationend", e => {
@@ -298,3 +308,13 @@ reobtainRack.addEventListener("animationend", e => {
         reobtainRack.textContent = "";
     }
 })
+
+const playerLiveCounter = document.createElement("span");
+playerLiveCounter.classList.add("playerLiveCounter")
+playerLiveCounter.textContent = "Lives: 2";
+app.appendChild(playerLiveCounter);
+
+const opponentLiveCounter = document.createElement("span");
+opponentLiveCounter.classList.add("opponentLiveCounter")
+opponentLiveCounter.textContent = "Lives: 2";
+app.appendChild(opponentLiveCounter);

@@ -85,8 +85,8 @@
         "value": 99
     },
     {
-        "name": "Random occurance",
-        "description": "Now as a card!",
+        "name": "Card of happenings",
+        "description": "Just random occurances...",
         "actionId": "randomBox"
     },
     {
@@ -196,7 +196,15 @@
     {
         "name": "Reobtain a discarded card",
         "actionId": "reobtain",
-        "weight": 99,
+        "wild": true
+    },
+    {
+        "name": "Forced +1",
+        "actionId": "forced+1"
+    },
+    {
+        "name": "Add 2 pressure",
+        "actionId": "x2",
         "wild": true
     }
 ]

@@ -58,7 +58,6 @@ export const setupDragging = () => {
         draggedCard.element.classList.remove("dragging");
         draggedCard.element.style.left = "";
         draggedCard.element.style.top = "";
-        console.log(game.inventory)
         const selectedCards = Array.from(game.selectedCards);
         for (const destination of document.getElementsByClassName("dragDestination")) {
             if (e.pageX > destination.getBoundingClientRect().x
@@ -132,7 +131,6 @@ export const setupDragging = () => {
             }
             destination.classList.remove("dragTarget")
         }
-        console.log("time to reset")
         draggedCard = null;
         dragGap.x = -1;
         dragGap.y = -1;
