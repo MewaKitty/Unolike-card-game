@@ -1,0 +1,74 @@
+[
+    {
+        "description": [
+            "Playing cards with the danger modifier removes 1 hp from opponent",
+            "Wild 1: Add 1 card",
+            "Wild 2: WIP",
+            "Wild 3: WIP Opponent resolves a danger card",
+            "Wild 4: -3 hp"
+        ],
+        "passive": "danger-1hp",
+        "wild1": "add1card",
+        "wild2": "wip",
+        "wild3": "wip",
+        "wild4": "-3hp",
+        "enemy1": {
+            "description": [
+                "Start: -1 hp, add 1 card",
+                "Attack: Add one extra card",
+                "Defeated by: Number cards"
+            ],
+            "start": "-1hpAdd1",
+            "attack": "plusOneExtra",
+            "defeat": ["number"]
+        },
+        "enemy2": {
+            "description": [
+                "Start: -1 hp",
+                "Attack: +1 card at start of turn",
+                "Defeated by: Yellow, Red, and Green cards"
+            ],
+            "start": "-1hp",
+            "attack": "+1AtTurnStart",
+            "defeat": ["Yellow", "Red", "Green"]
+        },
+        "enemy3": {
+            "description": [
+                "Start: -2hp",
+                "Attack: Only allows numbers to be discarded",
+                "Defeated by: Yellow and Red cards"
+            ],
+            "start": "-2hp",
+            "attack": "onlyAllowsNumbers",
+            "defeat": ["Yellow", "Red"]
+        },
+        "enemy4": {
+            "description": [
+                "Start: All add 1 card",
+                "Attack: -1 hp at start of turn",
+                "Defeated by: Blue, Red, and Green"
+            ],
+            "start": "allAdd1Card",
+            "attack": "-1hpAtTurnStart",
+            "defeat": ["Blue", "Red", "Green"]
+        }
+    },
+    {
+        "description": [
+            "Defeating an enemy adds 2 hp",
+            "Wild 1: Add 1 card and +2 hp",
+            "Wild 2: Defeat enemy",
+            "Wild 3: WIP",
+            "Wild 4: +4 hp to you, +2 hp"
+        ],
+        "passive": "defeatEnemy+2hp",
+        "wild1": "add1Card+2hp",
+        "wild2": "defeatEnemy",
+        "wild3": "wip",
+        "wild4": "+4hpOther+2",
+        "enemy1": {
+            "start": "-1hp",
+            "attack": "wild-1hp"
+        }
+    }
+]
