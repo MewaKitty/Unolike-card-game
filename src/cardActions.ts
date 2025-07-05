@@ -1,5 +1,5 @@
 import type { Game } from "./game.ts";
-import { shuffleArray, randomInteger, wait } from "./utils.ts";
+import { shuffleArray, randomInteger, wait, random } from "./utils.ts";
 import { Card } from "./cards.ts";
 
 import colorData from "./data/colors.json";
@@ -64,6 +64,7 @@ export default {
             if (newCard.color === game.currentCard!.color) break;
         }
         game.playersTurn = true;
+        game.updateInventoryPlayability();
     },
     "randomOccurance": async (game) => {
         if (await game.target.checkForReflectStatus(game.currentPile)) return;
@@ -307,5 +308,63 @@ export default {
     "forced+1": async (game) => {
         if (await game.target.checkForReflectStatus(game.currentPile)) return;
         await game.target.pickup();
-    }
+    },
+    "danger": async (game) => {
+        console.debug(game.actor)
+        if (game.actor.ability?.passive === "danger-1hp") {
+            console.log("danger1hp")
+            game.target.health -= 1;
+            game.target.updateHealthCount();
+        }
+        const dangerCard = game.actor.ability?.[random(["enemy1", "enemy2", "enemy3", "enemy4"]) as "enemy1" | "enemy2" | "enemy3" | "enemy4"];
+        if (!dangerCard) return;
+        document.getElementsByClassName("dangerCardArea")[0].textContent = "";
+        const dangerCardDiv = document.createElement("div");
+        dangerCardDiv.classList.add("card")
+        dangerCardDiv.classList.add("dangerCard");
+        const dangerCardDivInner = document.createElement("div");
+        dangerCardDivInner.classList.add("cardInner");
+        dangerCardDiv.appendChild(dangerCardDivInner);
+        document.getElementsByClassName("dangerCardArea")[0].appendChild(dangerCardDiv)
+        dangerCardDivInner.style = `--color: #333; color: #fff`;
+        const cardDescriptionSpan = document.createElement("span");
+        cardDescriptionSpan.classList.add("cardDescriptionSpan");
+        cardDescriptionSpan.textContent = dangerCard.description.join("\n");
+        dangerCardDivInner.appendChild(cardDescriptionSpan);
+        if (dangerCard.start === "-1hpAdd1") {
+            game.actor.health--;
+            game.actor.updateHealthCount();
+            await game.actor.pickup();
+        }
+        if (dangerCard.start === "-1hp") {
+            game.actor.health--;
+            game.actor.updateHealthCount();
+        }
+        if (dangerCard.start === "-2hp") {
+            game.actor.health -= 2;
+            game.actor.updateHealthCount();
+        }
+        if (dangerCard.start === "allAdd1Card") {
+            await game.actor.pickup();
+            await game.dealer.pickup();
+        }
+        game.dangerCard = dangerCard;
+    },
+    "wild1": async (game) => {
+        if (game.actor.ability?.wild1 === "add1card") {
+            await game.target.pickup();
+        }
+        if (game.actor.ability?.wild1 === "add1Card+2hp") {
+            await game.target.pickup();
+            game.actor.health += 2;
+            game.actor.updateHealthCount();
+        }
+    },
+    "wild4": async (game) => {
+        if (game.actor.ability?.wild4 === "-1hp") {
+            game.target.health -= 4;
+            game.target.updateHealthCount();
+            game.checkForWinCondition(game.actor.isOpponent);
+        }
+    },
 } satisfies Record<string, CardActionFunction> as Record<string, CardActionFunction>

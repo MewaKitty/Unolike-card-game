@@ -206,5 +206,27 @@
         "name": "Add 2 pressure",
         "actionId": "x2",
         "wild": true
+    },
+    {
+        "name": "Wild 1",
+        "actionId": "wild1",
+        "wild": true,
+        "weight": 99
+    },
+    {
+        "name": "Wild 2",
+        "actionId": "wild2",
+        "wild": true
+    },
+    {
+        "name": "Wild 3",
+        "actionId": "wild3",
+        "wild": true
+    },
+    {
+        "name": "Wild 4",
+        "actionId": "wild4",
+        "wild": true,
+        "weight": 99
     }
 ]

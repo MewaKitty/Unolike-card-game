@@ -515,3 +515,56 @@ div.selectedCard {
   font-weight: bolder;
   font-size: 1.5;
 }
+
+.playerHealthCount {
+  position: fixed;
+  right: 1rem;
+  bottom: 17rem;
+  font-weight: bolder;
+  font-size: 1.5;
+}
+
+.opponentHealthCount {
+  position: fixed;
+  right: 7em;
+  top: 16rem;
+  font-weight: bolder;
+  font-size: 1.5;
+}
+
+.abilityChooser {
+  position: fixed;
+  width: 80vw;
+  height: 80vh;
+  background: white;
+  border: 2px solid black;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 1rem;
+  display: flex;
+  font-size: 2rem;
+  flex-direction: column;
+  padding: 1rem;
+}
+
+.abilityChooser[hidden] {
+  display: none;
+}
+
+@keyframes abilityChooserOut {
+  from {
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+  to {
+    transform: translate(0, 0);
+    left: 100vw;
+  }
+}
+
+.dangerCardArea {
+  position: absolute;
+  right: 20rem;
+  top: 16rem;
+}

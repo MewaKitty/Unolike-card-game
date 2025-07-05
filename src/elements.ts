@@ -2,6 +2,7 @@ import { game, updateInventoryPlayability } from "./game.ts";
 import { setupDragging } from "./dragging.ts";
 import { Card } from "./cards.ts";
 import colorData from "./data/colors.json";
+import abilityData from "./data/abilities.json";
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 
@@ -35,11 +36,6 @@ app.appendChild(pickupPile);
 
 let pointerDownTime = 0
 pickupPile.addEventListener("pointerdown", async () => {
-    let hasPlayable = false;
-    for (const card of game.inventory) {
-        if (card.isPlayable()) hasPlayable = true;
-    }
-    if (hasPlayable) return;
     pointerDownTime = Date.now();
 });
 pickupPile.addEventListener("pointerup", async () => {
@@ -54,15 +50,19 @@ pickupPile.addEventListener("pointerup", async () => {
     setTimeout(() => placeholderDiv.remove(), 200)
     await game.animateElementMovement(game.pickupCard.element, placeholderDiv, game.pickupCard.wrapper)
     if (game.pickupCard.number.actionId === "draw3More") game.drawAmount += 3;
+    game.player.health--;
     game.addToRack(game.pickupCard)
     console.debug("draw", game.drawAmount)
-    for (let i = 0; i < Math.min(game.drawAmount - 1, 30); i++) {
+    for (let i = 0; i < Math.min(game.drawAmount - 1, 30) + (game.dangerCard?.attack === "plusOneExtra" ? 1 : 0); i++) {
         const newCard = new Card();
         if (newCard.number.actionId === "draw3More") game.drawAmount += 3;
+        game.player.health--;
         game.addToRack(newCard)
     }
+    game.checkForWinCondition(false);
     game.drawAmount = 0;
     document.getElementsByClassName("drawAmountText")[0].textContent = "";
+    game.player.updateHealthCount();
     //game.opponentTurn();
 })
 
@@ -223,7 +223,7 @@ reflectBoxYes.addEventListener("click", async () => {
     game.inventory.splice(game.inventory.indexOf(game.reflectCard!), 1);
     await game.animateElementMovement(game.reflectCard!.wrapper, document.getElementsByClassName("cardDiscard" + game.reflectPile)[0].children[0] as HTMLElement, document.getElementsByClassName("cardDiscard" + game.reflectPile)[0]);
     game.reflectRes?.(true);
-    (document.getElementsByClassName("reflectPlaceholder")[0] as HTMLDivElement).style.minWidth = "0";
+    if (document.getElementsByClassName("reflectPlaceholder")[0]) (document.getElementsByClassName("reflectPlaceholder")[0] as HTMLDivElement).style.minWidth = "0";
     setTimeout(() => document.getElementsByClassName("reflectPlaceholder")[0].remove(), 160)
     game.reflectCard = null;
     updateInventoryPlayability();
@@ -318,3 +318,51 @@ const opponentLiveCounter = document.createElement("span");
 opponentLiveCounter.classList.add("opponentLiveCounter")
 opponentLiveCounter.textContent = "Lives: 2";
 app.appendChild(opponentLiveCounter);
+
+const playerHealthCount = document.createElement("span");
+playerHealthCount.classList.add("playerHealthCount")
+playerHealthCount.textContent = "Health: 48";
+app.appendChild(playerHealthCount);
+
+const opponentHealthCount = document.createElement("span");
+opponentHealthCount.classList.add("opponentHealthCount")
+opponentHealthCount.textContent = "Health: 48";
+app.appendChild(opponentHealthCount);
+
+const abilityChooser = document.createElement("div");
+abilityChooser.classList.add("abilityChooser");
+app.appendChild(abilityChooser);
+
+const abilityChooserLabel = document.createElement("span");
+abilityChooserLabel.textContent = "Choose an ability card";
+abilityChooser.appendChild(abilityChooserLabel)
+
+abilityChooser.addEventListener("animationend", e => {
+    if (e.animationName === "abilityChooserOut") {
+        abilityChooser.hidden = true;
+    }
+})
+
+for (const ability of abilityData) {
+    const abilityCard = document.createElement("div");
+    abilityCard.classList.add("card")
+    abilityCard.classList.add("abilityCard");
+    const abilityCardInner = document.createElement("div");
+    abilityCardInner.classList.add("cardInner");
+    abilityCard.appendChild(abilityCardInner);
+    abilityChooser.appendChild(abilityCard)
+    abilityCardInner.style = `--color: #333; color: #fff`;
+    const cardDescriptionSpan = document.createElement("span");
+    cardDescriptionSpan.classList.add("cardDescriptionSpan");
+    cardDescriptionSpan.textContent = ability.description.join("\n");
+    abilityCardInner.appendChild(cardDescriptionSpan);
+    abilityCard.addEventListener("click", () => {
+        abilityChooser.style.animation = ".6s abilityChooserOut"
+        game.player.ability = ability;
+        console.log(game.player)
+    })
+}
+
+const dangerCardArea = document.createElement("div");
+dangerCardArea.classList.add("dangerCardArea");
+app.appendChild(dangerCardArea);

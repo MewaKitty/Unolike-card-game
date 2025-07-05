@@ -103,14 +103,18 @@ export const setupDragging = () => {
                 if (destination === cardRack) {
                     if (!game.inventory.includes(draggedCard)) {
                         if (draggedCard.number.actionId === "draw3More") game.drawAmount += 3;
+                        game.player.health--;
                         game.addToRack(draggedCard);
-                        for (let i = 0; i < Math.min(game.drawAmount - 1, 30); i++) {
+                        for (let i = 0; i < Math.min(game.drawAmount - 1, 30) + (game.dangerCard?.attack === "plusOneExtra" ? 1 : 0); i++) {
                             const newCard = new Card();
                             if (newCard.number.actionId === "draw3More") game.drawAmount += 3;
+                            game.player.health--;
                             game.addToRack(newCard)
                         }
+                        game.checkForWinCondition(false);
                         game.drawAmount = 0;
                         document.getElementsByClassName("drawAmountText")[0].textContent = "";
+                        game.player.updateHealthCount();
                         if (draggedCard.tags.includes("minipile")) {
                             for (const card of game.minipile) {
                                 game.addToRack(card);

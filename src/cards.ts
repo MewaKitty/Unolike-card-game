@@ -161,6 +161,7 @@ export class Card {
     return false;
   }
   playablePiles (forOpponent?: boolean): number[] {
+    if (game.dangerCard?.attack === "onlyAllowsNumbers" && (this.number.value === undefined || this.number.value === null)) return [];
     if (game.drawAmount && (this.number.draw === undefined || this.number.draw === null) && (this.modifier?.draw === undefined || this.modifier?.draw === null)) return [];
     if (game.playersTurn === false && !forOpponent) return [];
     if (game.drawAmount) return [game.drawPile];

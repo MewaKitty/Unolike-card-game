@@ -12,6 +12,12 @@
   transition: left 80ms, top 80ms, opacity 160ms;
   background: white;
   box-sizing: border-box;
+  white-space: pre-line;
+}
+
+.abilityCard {
+  height: 15rem;
+  width: 11rem;
 }
 
 .cardInner {
@@ -35,4 +41,9 @@
 
 .cardDescriptionSpan, .cardModifierSpan {
   font-size: 0.8rem;
+}
+
+.dangerCard {
+  height: 11rem;
+  width: 8rem;
 }
