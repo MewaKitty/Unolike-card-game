@@ -9,7 +9,21 @@ export const getDraggedCard = () => draggedCard;
 
 export const setupDragging = () => {
     const cardRack = document.getElementsByClassName("cardRack")[0];
-    addEventListener("pointerdown", () => game.wasDragging = false)
+    document.getElementsByClassName("cardRack")[0].addEventListener("touchstart", e => {
+        if (draggedCard) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    }, false)
+    document.getElementsByClassName("cardRack")[0].addEventListener("touchmove", e => {
+        if (draggedCard) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    }, false)
+    addEventListener("pointerdown", e => {
+        game.wasDragging = false
+    })
     addEventListener("pointermove", e => {
         if (!draggedCard) return;
         if (!draggedCard.element.classList.contains("dragging")) {
@@ -101,7 +115,7 @@ export const setupDragging = () => {
                     updateInventoryPlayability();
                 }
                 if (destination === cardRack) {
-                    if (!game.inventory.includes(draggedCard)) {
+                    if (!game.player.cards.includes(draggedCard)) {
                         if (draggedCard.number.actionId === "draw3More") game.drawAmount += 3;
                         game.player.health--;
                         game.addToRack(draggedCard);

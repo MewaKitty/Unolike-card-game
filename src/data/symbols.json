@@ -211,22 +211,24 @@
         "name": "Wild 1",
         "actionId": "wild1",
         "wild": true,
-        "weight": 99
+        "abilityWild": "wild1"
     },
     {
         "name": "Wild 2",
         "actionId": "wild2",
-        "wild": true
+        "wild": true,
+        "abilityWild": "wild2"
     },
     {
         "name": "Wild 3",
         "actionId": "wild3",
-        "wild": true
+        "wild": true,
+        "abilityWild": "wild3"
     },
     {
         "name": "Wild 4",
         "actionId": "wild4",
         "wild": true,
-        "weight": 99
+        "abilityWild": "wild4"
     }
 ]

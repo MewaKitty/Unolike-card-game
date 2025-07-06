@@ -41,7 +41,6 @@
     },
     {
         "name": "Resolve a danger card",
-        "actionId": "danger",
-        "weight": 99
+        "actionId": "danger"
     }
 ]

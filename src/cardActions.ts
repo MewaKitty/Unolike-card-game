@@ -40,6 +40,7 @@ export default {
             game.addDrawAmount(randomInteger(1, 10), game.currentPile)
         }
         document.getElementsByClassName("pressureCount")[0].textContent = "Pressure: " + game.pressureAmount + "/10";
+        (document.querySelector(".pressureBar .healthBarContent") as HTMLDivElement).style.width = (game.pressureAmount / 10) * 100 + "%";
     },
     "discardAll": (game) => {
         for (const secondCard of game.actor.cards) {
@@ -54,6 +55,7 @@ export default {
         if (await game.target.checkForReflectStatus(game.currentPile)) return;
         game.pressureAmount = 1;
         document.getElementsByClassName("pressureCount")[0].textContent = "Pressure: " + game.pressureAmount + "/10";
+        (document.querySelector(".pressureBar .healthBarContent") as HTMLDivElement).style.width = (game.pressureAmount / 10) * 100 + "%";
         game.addDrawAmount(randomInteger(1, 10), game.currentPile)
     },
     "drawColor": async (game) => {
@@ -96,6 +98,7 @@ export default {
                     const newCard = await game.target.pickup();
                     if (newCard.color === game.currentCard!.color) break;
                 }
+                game.playersTurn = true;
                 break;
             case 5:
                 game.actor.swapCardsWith(game.target);
@@ -169,6 +172,7 @@ export default {
         (document.getElementsByClassName("minipileOuter")[0] as HTMLElement).hidden = false;
         document.getElementsByClassName("minipileOuter")[0].classList.remove("minipileExit");
         minipileCard.element.classList.remove("unplayable")
+        document.getElementsByClassName("minipileOuter")[0].classList.remove("unplayable");
         game.updateCardDiscard();
         game.updateInventoryPlayability();
     },
@@ -331,6 +335,11 @@ export default {
         cardDescriptionSpan.classList.add("cardDescriptionSpan");
         cardDescriptionSpan.textContent = dangerCard.description.join("\n");
         dangerCardDivInner.appendChild(cardDescriptionSpan);
+        if (dangerCard.start === "-1WildAdd1") {
+            const wildCard = game.actor.cards.find(card => card.color.wild);
+            if (wildCard) game.actor.discardToBottom(wildCard);
+            await game.actor.pickup();
+        }
         if (dangerCard.start === "-1hpAdd1") {
             game.actor.health--;
             game.actor.updateHealthCount();
@@ -349,6 +358,7 @@ export default {
             await game.dealer.pickup();
         }
         game.dangerCard = dangerCard;
+        if (dangerCard.start === "skip") return true;
     },
     "wild1": async (game) => {
         if (game.actor.ability?.wild1 === "add1card") {
@@ -356,8 +366,18 @@ export default {
         }
         if (game.actor.ability?.wild1 === "add1Card+2hp") {
             await game.target.pickup();
-            game.actor.health += 2;
+            if (game.dangerCard?.attack !== "noHealing") game.actor.health += 2;
             game.actor.updateHealthCount();
+        }
+    },
+    "wild2": async (game) => {
+        if (game.actor.ability?.wild2 === "defeatEnemy") {
+            document.getElementsByClassName("dangerCardArea")[0].textContent = "";
+            game.dangerCard = null;
+            if (game.dealer.ability?.passive === "defeatEnemy+2hp") {
+                game.dealer.health += 2;
+                game.dealer.updateHealthCount();
+            }
         }
     },
     "wild4": async (game) => {
@@ -365,6 +385,12 @@ export default {
             game.target.health -= 4;
             game.target.updateHealthCount();
             game.checkForWinCondition(game.actor.isOpponent);
+        }
+        if (game.actor.ability?.wild4 === "+4hpOther+2") {
+            if (game.dangerCard?.attack !== "noHealing") game.actor.health += 4;
+            game.actor.updateHealthCount();
+            if (game.dangerCard?.attack !== "noHealing") game.dealer.health += 2;
+            game.dealer.updateHealthCount();
         }
     },
 } satisfies Record<string, CardActionFunction> as Record<string, CardActionFunction>

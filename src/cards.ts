@@ -20,7 +20,8 @@ interface CardNumber {
   actionId?: string,
   color?: string,
   description?: string,
-  unlisted?: boolean
+  unlisted?: boolean,
+  abilityWild?: string
 }
 
 interface CardModifier {
@@ -47,7 +48,7 @@ export class Card {
     if (this.number.color) this.color = colorData.find(color => color.name === this.number.color)!;
     this.hidden = hidden ?? false;
     this.tags = tags ?? [];
-    this.modifier = (this.number.description && !this.number.draw) ? null : (Math.random() > 0.5 ? weightedRandom(modifierData.filter(modifier => !modifier.unlisted)) : null)
+    this.modifier = ((this.number.description || this.number.abilityWild) && !this.number.draw) ? null : (Math.random() > 0.5 ? weightedRandom(modifierData.filter(modifier => !modifier.unlisted)) : null)
     if (this.number.value === 0 || this.number.value === 7) this.modifier = modifierData.find(modifier => modifier.actionId === "swap") ?? null;
     const wrapper = document.createElement("div");
     wrapper.classList.add("cardWrapper");
@@ -64,7 +65,7 @@ export class Card {
       updateInventoryPlayability();
       /*if (this.tags.includes("pickup")) {
         let hasPlayable = false;
-        for (const card of game.inventory) {
+        for (const card of game.player.cards) {
             if (card.isPlayable()) hasPlayable = true;
         }
         if (hasPlayable) return;
@@ -103,7 +104,7 @@ export class Card {
     wrapper.addEventListener("pointerup", async () => {
       if (Date.now() - pointerDownTime > 350) return;
       if (!this.tags.includes("pickup") && !this.isPlayable()) return;
-      if (!game.inventory.includes(this)) return;
+      if (!game.player.cards.includes(this)) return;
       if (this.tags.includes("discarded")) return;
       if (div.classList.contains("selectedCard")) {
         div.classList.remove("selectedCard")
@@ -152,6 +153,20 @@ export class Card {
     if (this.hidden) innerElement.style = `--color: #fff; color: black;`;
     if (this.hidden) innerElement.textContent = `Card`;
   }
+  updateAbilityWild (isOpponent: boolean) {
+    if (this.number.abilityWild) {
+      if (isOpponent) {
+
+      } else {
+        this.innerElement.querySelector(".cardDescriptionSpan")?.remove();
+        if (!game.player.ability) return;
+        const cardDescriptionSpan = document.createElement("span");
+        cardDescriptionSpan.classList.add("cardDescriptionSpan");
+        cardDescriptionSpan.textContent = game.player.ability![this.number.abilityWild + "Text" as "wild1Text"];
+        this.innerElement.appendChild(cardDescriptionSpan);
+      }
+    }
+  }
   playableOn (card: Card) {
     if (card.number === this.number) return true;
     if (card.color === this.color) return true;
@@ -167,7 +182,7 @@ export class Card {
     if (game.drawAmount) return [game.drawPile];
     if (this.number.actionId === "99") {
       let hasNon99Card = false;
-      for (const card of (forOpponent ? game.opponentHand : game.inventory)) {
+      for (const card of (forOpponent ? game.dealer.cards : game.player.cards)) {
         if (card.number.actionId !== "99") hasNon99Card = true;
       }
       if (hasNon99Card) return [];
@@ -238,7 +253,7 @@ export class Card {
       return false;
     };
     if (game.selectedCards.length === 0) {
-      for (const secondCard of game.inventory) {
+      for (const secondCard of game.player.cards) {
         if (secondCard.number.value === null || secondCard.number.value === undefined) continue;
         if (this === secondCard) continue;
         for (let index = -1; index < game.discarded.length; index++) {

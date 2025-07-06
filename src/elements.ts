@@ -20,7 +20,7 @@ for (let i = 0; i < 4; i++) {
 export const cardRack = document.createElement("div");
 cardRack.classList.add("cardRack");
 cardRack.classList.add("dragDestination");
-for (const card of game.inventory) cardRack.appendChild(card.wrapper);
+for (const card of game.player.cards) cardRack.appendChild(card.wrapper);
 
 updateInventoryPlayability();
 
@@ -68,7 +68,7 @@ pickupPile.addEventListener("pointerup", async () => {
 
 const opponentHand = document.createElement("div");
 opponentHand.classList.add("opponentHand")
-for (const card of game.opponentHand) {
+for (const card of game.dealer.cards) {
     opponentHand.appendChild(card.wrapper);
 }
 app.appendChild(opponentHand);
@@ -82,10 +82,18 @@ const drawAmountText = document.createElement("span");
 drawAmountText.classList.add("drawAmountText")
 app.appendChild(drawAmountText);
 
+const pressureBar = document.createElement("div");
+pressureBar.classList.add("pressureBar");
 const pressureCount = document.createElement("span");
 pressureCount.classList.add("pressureCount")
 pressureCount.textContent = "Pressure: 1/10";
-app.appendChild(pressureCount);
+pressureBar.appendChild(pressureCount);
+app.appendChild(pressureBar);
+
+const pressureBarContent = document.createElement("div");
+pressureBarContent.style.width = "0%";
+pressureBarContent.classList.add("pressureBarContent");
+pressureBar.appendChild(pressureBarContent);
 
 const minipileOuter = document.createElement("div");
 minipileOuter.classList.add("minipileOuter");
@@ -136,9 +144,9 @@ for (const color of colorData) {
                 for (let i = 0; i < 3; i++) {
                     await game.opponentPickup();
                 }
-                for (const card of game.opponentHand) {
+                for (const card of game.dealer.cards) {
                     if (card.color.name === color.name) {
-                        game.opponentHand.splice(game.opponentHand.indexOf(card), 1);
+                        game.dealer.cards.splice(game.dealer.cards.indexOf(card), 1);
                         card.wrapper.remove();
                         if (game.colorChooserPile === -1) {
                             game.minipile.unshift(card);
@@ -220,7 +228,7 @@ reflectBoxYes.addEventListener("click", async () => {
     useReflectBox.classList.add("reflectBoxExit");
     const card = (game.reflectPile === -1 ? game.minipile : game.discarded[game.reflectPile]).at(-1);
     (game.reflectPile === -1 ? game.minipile : game.discarded[game.reflectPile]).push(game.reflectCard!);
-    game.inventory.splice(game.inventory.indexOf(game.reflectCard!), 1);
+    game.player.cards.splice(game.player.cards.indexOf(game.reflectCard!), 1);
     await game.animateElementMovement(game.reflectCard!.wrapper, document.getElementsByClassName("cardDiscard" + game.reflectPile)[0].children[0] as HTMLElement, document.getElementsByClassName("cardDiscard" + game.reflectPile)[0]);
     game.reflectRes?.(true);
     if (document.getElementsByClassName("reflectPlaceholder")[0]) (document.getElementsByClassName("reflectPlaceholder")[0] as HTMLDivElement).style.minWidth = "0";
@@ -319,15 +327,32 @@ opponentLiveCounter.classList.add("opponentLiveCounter")
 opponentLiveCounter.textContent = "Lives: 2";
 app.appendChild(opponentLiveCounter);
 
+const playerHealthBar = document.createElement("div");
+playerHealthBar.classList.add("playerHealthBar");
 const playerHealthCount = document.createElement("span");
 playerHealthCount.classList.add("playerHealthCount")
 playerHealthCount.textContent = "Health: 48";
 app.appendChild(playerHealthCount);
+playerHealthBar.appendChild(playerHealthCount);
+app.appendChild(playerHealthBar);
 
+const playerHealthBarContent = document.createElement("div");
+playerHealthBarContent.style.width = "100%";
+playerHealthBarContent.classList.add("healthBarContent");
+playerHealthBar.appendChild(playerHealthBarContent);
+
+const opponentHealthBar = document.createElement("div");
+opponentHealthBar.classList.add("opponentHealthBar");
 const opponentHealthCount = document.createElement("span");
 opponentHealthCount.classList.add("opponentHealthCount")
 opponentHealthCount.textContent = "Health: 48";
-app.appendChild(opponentHealthCount);
+opponentHealthBar.appendChild(opponentHealthCount);
+app.appendChild(opponentHealthBar);
+
+const opponentHealthBarContent = document.createElement("div");
+opponentHealthBarContent.style.width = "100%";
+opponentHealthBarContent.classList.add("healthBarContent");
+opponentHealthBar.appendChild(opponentHealthBarContent);
 
 const abilityChooser = document.createElement("div");
 abilityChooser.classList.add("abilityChooser");
@@ -359,7 +384,9 @@ for (const ability of abilityData) {
     abilityCard.addEventListener("click", () => {
         abilityChooser.style.animation = ".6s abilityChooserOut"
         game.player.ability = ability;
+        game.dealer.ability = abilityData.find(ability => ability !== game.player.ability)!;
         console.log(game.player)
+        updateInventoryPlayability();
     })
 }
 
