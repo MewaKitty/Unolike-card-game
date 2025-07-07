@@ -230,5 +230,52 @@
         "actionId": "wild4",
         "wild": true,
         "abilityWild": "wild4"
+    },
+    {
+        "name": "...",
+        "description": "Play any card on top of this to get started.",
+        "value": -1,
+        "actionId": "warStartCard",
+        "unlisted": true
+    },
+    {
+        "name": "Randomize hand",
+        "description": "Replace each card in your hand with a new one",
+        "actionId": "randomizeHand",
+        "wild": true
+    },
+    {
+        "name": "Give card away",
+        "description": "Give a card away to the opponent",
+        "actionId": "giveCardAway"
+    },
+    {
+        "name": "Get rid of all 7s",
+        "actionId": "getRidOf7s",
+        "wild": true
+    },
+    {
+        "name": "+2 if color match",
+        "description": "Discard color card, +2 if matching color.",
+        "weight": 99,
+        "actionId": "+2IfColorMatch"
+    },
+    {
+        "name": "All give card away",
+        "description": "Give away a card, and receive a card.",
+        "actionId": "allGiveCardAway"
+    },
+    {
+        "name": "Shuffle evenly",
+        "wild": true,
+        "actionId": "shuffleEvenly",
+        "weight": 0.2,
+        "description": "Distributes the cards with the same amount"
+    },
+    {
+        "name": "Give 2 cards away",
+        "description": "Give 2 cards away to the opponent",
+        "actionId": "give2CardsAway",
+        "weight": 99
     }
 ]

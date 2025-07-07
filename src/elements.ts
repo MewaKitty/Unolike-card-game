@@ -38,6 +38,7 @@ let pointerDownTime = 0
 pickupPile.addEventListener("pointerdown", async () => {
     pointerDownTime = Date.now();
 });
+
 pickupPile.addEventListener("pointerup", async () => {
     if (Date.now() - pointerDownTime > 350) return;
     if (!game.playersTurn) return;
@@ -45,10 +46,16 @@ pickupPile.addEventListener("pointerup", async () => {
     if (game.wasDragging) return;
     //game.playersTurn = false;
     const placeholderDiv = document.createElement("div");
+    placeholderDiv.classList.add("placeholderDiv");
     placeholderDiv.classList.add("wrapper");
     cardRack.appendChild(placeholderDiv)
-    setTimeout(() => placeholderDiv.remove(), 200)
+    //setTimeout(() => placeholderDiv.remove(), 200)
+    game.pickupCard.element.style.position = "";
+    game.pickupCard.element.style.left = "";
+    game.pickupCard.element.style.top = "";
+    game.pickupCard.element.classList.remove("dragging")
     await game.animateElementMovement(game.pickupCard.element, placeholderDiv, game.pickupCard.wrapper)
+    placeholderDiv.remove()
     if (game.pickupCard.number.actionId === "draw3More") game.drawAmount += 3;
     game.player.health--;
     game.addToRack(game.pickupCard)
@@ -59,6 +66,10 @@ pickupPile.addEventListener("pointerup", async () => {
         game.player.health--;
         game.addToRack(newCard)
     }
+    cardRack.scrollTo({
+        left: cardRack.scrollWidth,
+        behavior: "smooth"
+    });
     game.checkForWinCondition(false);
     game.drawAmount = 0;
     document.getElementsByClassName("drawAmountText")[0].textContent = "";
@@ -376,7 +387,7 @@ for (const ability of abilityData) {
     abilityCardInner.classList.add("cardInner");
     abilityCard.appendChild(abilityCardInner);
     abilityChooser.appendChild(abilityCard)
-    abilityCardInner.style = `--color: #333; color: #fff`;
+    abilityCardInner.style = `--color: #333; --dark: #333; --text: #fff`;
     const cardDescriptionSpan = document.createElement("span");
     cardDescriptionSpan.classList.add("cardDescriptionSpan");
     cardDescriptionSpan.textContent = ability.description.join("\n");
@@ -393,3 +404,30 @@ for (const ability of abilityData) {
 const dangerCardArea = document.createElement("div");
 dangerCardArea.classList.add("dangerCardArea");
 app.appendChild(dangerCardArea);
+
+const giveCardAwayOuter = document.createElement("div");
+giveCardAwayOuter.classList.add("giveCardAwayOuter");
+const giveCardAwayInfo = document.createElement("div")
+giveCardAwayInfo.classList.add("giveCardAwayInfo");
+const giveCardAwayLabel = document.createElement("span");
+giveCardAwayLabel.classList.add("giveCardAwayLabel");
+giveCardAwayLabel.textContent = "Choose a card";
+giveCardAwayInfo.appendChild(giveCardAwayLabel)
+const giveCardAwayDescription = document.createElement("span");
+giveCardAwayDescription.classList.add("giveCardAwayDescription");
+giveCardAwayDescription.textContent = "Move a card from your hand to here that you would like to give to the opponent.";
+giveCardAwayInfo.appendChild(giveCardAwayDescription)
+giveCardAwayOuter.appendChild(giveCardAwayInfo);
+const giveCardAwayInner = document.createElement("div");
+giveCardAwayInner.classList.add("giveCardAwayInner");
+giveCardAwayOuter.appendChild(giveCardAwayInner);
+giveCardAwayInner.classList.add("dragDestination");
+giveCardAwayOuter.hidden = true;
+app.appendChild(giveCardAwayOuter);
+
+giveCardAwayOuter.addEventListener("animationend", e => {
+    if (e.animationName === "giveCardAwayExit") {
+        giveCardAwayOuter.style.animation = "";
+        giveCardAwayOuter.hidden = true;
+    }
+})

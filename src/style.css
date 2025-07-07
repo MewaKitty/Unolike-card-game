@@ -43,6 +43,10 @@ body, html {
     border-color: white;
     background: #333;
   }
+  .cardInner.cardInner {
+    background: var(--dark);
+    color: white;
+  }
 }
 
 #app {
@@ -485,6 +489,7 @@ div.selectedCard {
   align-items: center;
   justify-content: center;
   font-size: 2rem;
+  z-index: 2;
 }
 
 .resultScreen[hidden] {
@@ -609,6 +614,7 @@ div.selectedCard {
   font-size: 2rem;
   flex-direction: column;
   padding: 1rem;
+  z-index: 2;
 }
 
 .abilityChooser[hidden] {
@@ -686,5 +692,80 @@ div.selectedCard {
 @media (min-width: 0px) and (max-height: 670px) {
   .pickupPile {
     top: 26.5vh;
+  }
+}
+
+.giveCardAwayOuter {
+  position: absolute;
+  top: 30vh;
+  left: 0;
+  width: calc(10vw + 10rem);
+  height: 14rem;
+  background: #002200;
+  border-top-right-radius: 1rem;
+  border-bottom-right-radius: 1rem;
+  padding: 1rem;
+  box-sizing: border-box;
+  color: white;
+  display: flex;
+  gap: 1rem;
+  transition: left .5s;
+}
+
+.giveCardAwayOuter[hidden] {
+  display: none;
+}
+
+.giveCardAwayInfo {
+  width: 10vw;
+  display: flex;
+  flex-direction: column;
+}
+
+.giveCardAwayLabel {
+  font-size: 1.2rem;
+}
+
+.giveCardAwayInner {
+  height: 10rem;
+  width: 7rem;
+  border-radius: .5rem;
+  position: unset;
+  padding: 0;
+  transition: opacity 160ms;
+  border: 2px dotted white;
+}
+
+@keyframes giveCardAwayExit {
+  from {
+    left: 0;
+  }
+  to {
+    left: calc(-10vw + -10rem);
+  }
+}
+
+@keyframes giveCardAwayEnter {
+  from {
+    left: calc(-10vw + -10rem);
+  }
+  to {
+    left: 0;
+  }
+}
+
+
+@media (min-width: 1650px) and (min-height: 1000px) {
+  .cardRack {
+    display: grid;
+    grid-template-columns: repeat(13, 1fr);
+    height: 23rem;
+  }
+  .playerHealthBar, .playerLiveCounter, .playerCardCount {
+    bottom: 25rem;
+  }
+  .pressureBar {
+    top: 40vh;
+    height: fit-content;
   }
 }

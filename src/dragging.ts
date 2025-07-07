@@ -21,7 +21,7 @@ export const setupDragging = () => {
             e.stopPropagation();
         }
     }, false)
-    addEventListener("pointerdown", e => {
+    addEventListener("pointerdown", () => {
         game.wasDragging = false
     })
     addEventListener("pointermove", e => {
@@ -125,12 +125,17 @@ export const setupDragging = () => {
                             game.player.health--;
                             game.addToRack(newCard)
                         }
+                        cardRack.scrollTo({
+                            left: cardRack.scrollWidth,
+                            behavior: "smooth"
+                        });
                         game.checkForWinCondition(false);
                         game.drawAmount = 0;
                         document.getElementsByClassName("drawAmountText")[0].textContent = "";
                         game.player.updateHealthCount();
                         if (draggedCard.tags.includes("minipile")) {
                             for (const card of game.minipile) {
+                                if (card.number.actionId === "warStartCard") continue;
                                 game.addToRack(card);
                                 card.tags.splice(card.tags.indexOf("minipile"), 1);
                                 card.tags.splice(card.tags.indexOf("discarded"), 1);
@@ -145,6 +150,27 @@ export const setupDragging = () => {
                         updateInventoryPlayability();
                         game.updateCardDiscard();
                     };
+                }
+                if (destination.classList.contains("giveCardAwayInner")) {
+                    game.dealer.cards.push(draggedCard);
+                    game.player.cards.splice(game.player.cards.indexOf(draggedCard, 1));
+                    document.getElementsByClassName("opponentHand")[0].appendChild(draggedCard.wrapper);
+                    if (game.giveCardAction === "allGiveCardAway") {
+                        const card = game.dealer.cards[0];
+                        game.player.cards.push(card);
+                        game.dealer.cards.splice(game.dealer.cards.indexOf(card), 1);
+                        card.hidden = false;
+                        card.updateElement();
+                        document.getElementsByClassName("cardRack")[0].appendChild(card.wrapper);
+                    }
+                    if (game.giveCardAction === "give2CardsAway") {
+                        document.getElementsByClassName("giveCardAwayLabel")[0].textContent = "Choose another card";
+                        game.giveCardAction = "giveCardAway";
+                        game.checkForWinCondition(false);
+                    } else {
+                        (document.getElementsByClassName("giveCardAwayOuter")[0] as HTMLElement).style.animation = "giveCardAwayExit 1s";
+                        await game.opponentTurn();
+                    }
                 }
             }
             destination.classList.remove("dragTarget")

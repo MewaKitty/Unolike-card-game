@@ -132,6 +132,11 @@ export class Game {
         defeat: string[],
         description: string[]
     } | null
+    minipileAction: string;
+    onePileLockType: string;
+    onePileLockNumber: number;
+    giveCardAction: string;
+    hasEnded: boolean;
     constructor() {
         /*
         this.player.cards = [];
@@ -173,6 +178,11 @@ export class Game {
             this.player.cards.push(new Card())
             this.dealer.cards.push(new Card(true))
         }
+        this.minipileAction = "";
+        this.onePileLockType = "";
+        this.onePileLockNumber = 0;
+        this.giveCardAction = "";
+        this.hasEnded = false;
     }
     getPlayer (index: number) {
         if (index === 0) return this.player;
@@ -219,21 +229,25 @@ export class Game {
     }
     animateElementMovement(element: HTMLElement, destination: HTMLElement, parent: Element | false) {
         return new Promise(res => {
-            element.style.position = "fixed";
-            element.style.left = element.getBoundingClientRect().left + "px";
-            element.style.top = element.getBoundingClientRect().top + "px";
+            console.debug(element.getBoundingClientRect())
+            console.debug(destination)
             element.style.transition = "left .5s, top .5s"
+            element.style.position = "fixed";
             setTimeout(() => {
-                element.style.left = destination.getBoundingClientRect().left + "px";
-                element.style.top = destination.getBoundingClientRect().top + "px";
+                element.style.left = element.getBoundingClientRect().left + "px";
+                element.style.top = element.getBoundingClientRect().top + "px";
                 setTimeout(() => {
-                    if (parent) element.style.position = "";
-                    if (parent) parent.appendChild(element);
-                    this.updateCardDiscard();
-                    element.style.transition = "";
-                    res(null);
-                }, 500)
-            }, 100)
+                    element.style.left = destination.getBoundingClientRect().left + "px";
+                    element.style.top = destination.getBoundingClientRect().top + "px";
+                    setTimeout(() => {
+                        if (parent) element.style.position = "";
+                        if (parent) parent.appendChild(element);
+                        this.updateCardDiscard();
+                        element.style.transition = "";
+                        res(null);
+                    }, 500)
+                }, 0)
+            });
         });
     }
     async opponentTurn() {
@@ -325,7 +339,7 @@ export class Game {
                         break;
                     };
                 }
-                if (!hasCard) child.remove();
+                if (!hasCard && !child.classList.contains("placeholderDiv")) child.remove();
             }
             for (const child of document.getElementsByClassName("opponentHand")[0].children) {
                 let hasCard = false;
@@ -431,12 +445,14 @@ export class Game {
                     if (game.isMinipileActive && involveMinipile) {
                         for (const secondCard of game.minipile) {
                             if (card === secondCard) continue;
+                            if (secondCard.number.actionId === "warStartCard") continue;
                             secondCard.tags.splice(card.tags.indexOf("minipile"), 1);
                             secondCard.tags.splice(card.tags.indexOf("discarded"), 1);
                             game.dealer.cards.push(secondCard);
                         }
                         game.minipile.length = 0;
                         game.isMinipileActive = false;
+                        game.minipileAction = "";
                         document.getElementsByClassName("minipileOuter")[0].classList.add("minipileExit");
                         updateInventoryPlayability();
                         this.updateCardDiscard();
@@ -504,12 +520,21 @@ export class Game {
     }
     async applyPlayerDiscardEffects(card: Card, pile: number) {
         console.log("playerDiscard", card);
+        if (pile === -1 && game.minipileAction === "war") return;
         this.actor = this.getPlayer(PlayerIndex.Player)!;
         this.target = this.getPlayer(PlayerIndex.Opponent)!;
         this.currentPile = pile;
         this.currentCard = card;
         this.pileContents = pile === -1 ? game.minipile : game.discarded[pile];
         const pileContents = this.pileContents;
+        if (game.onePileLockType === "+2IfColorMatch") {
+            if (game.dealer.cards.find(secondCard => card.color === secondCard.color)) {
+                for (let i = 0; i < 2; i++) {
+                    await game.dealer.pickup();
+                }
+            }
+            game.onePileLockType = "";
+        }
         if (game.dangerCard?.defeat.includes("number") && card.number.value !== undefined && card.number.value !== null) {
             document.getElementsByClassName("dangerCardArea")[0].textContent = "";
             game.dangerCard = null;
@@ -625,12 +650,21 @@ export class Game {
     }
     async applyOpponentDiscardEffects(card: Card, pile: number) {
         console.log("opponentDiscard", card);
+        if (pile === -1 && game.minipileAction === "war") return;
         if (game.player.cards.length === 0 || game.dealer.cards.length === 0) return;
         this.actor = this.getPlayer(PlayerIndex.Opponent)!;
         this.target = this.getPlayer(PlayerIndex.Player)!;
         this.currentPile = pile;
         this.currentCard = card;
         this.pileContents = pile === -1 ? game.minipile : game.discarded[pile];
+        if (game.onePileLockType === "+2IfColorMatch") {
+            if (game.dealer.cards.find(secondCard => card.color === secondCard.color)) {
+                for (let i = 0; i < 2; i++) {
+                    await game.dealer.pickup();
+                }
+            }
+            game.onePileLockType = "";
+        }
         if (game.dangerCard?.defeat.includes("number") && card.number.value !== undefined && card.number.value !== null) {
             document.getElementsByClassName("dangerCardArea")[0].textContent = "";
             game.dangerCard = null;
@@ -736,12 +770,17 @@ export class Game {
         await game.animateElementMovement(game.pickupCard.element, placeholderDiv, game.pickupCard.wrapper)
         const pickupCard = game.pickupCard;
         game.addToRack(game.pickupCard)
+        document.getElementsByClassName("cardRack")[0].scrollTo({
+            left: document.getElementsByClassName("cardRack")[0].scrollWidth,
+            behavior: "smooth"
+        });
         game.player.health--;
         game.player.updateHealthCount();
         return pickupCard;
     }
     playableTwins() {
         if (game.selectedCards.length === 1) return game.selectedCards[0].playablePiles();
+        if (game.minipile.length > 0 && game.minipileAction === "war") return [];
         const piles = [];
         if (game.selectedCards.length === 2 && !isNaN(+game.selectedCards[0].number.value!) && !isNaN(+game.selectedCards[1].number.value!)) {
             for (let index = -1; index < game.discarded.length; index++) {
@@ -787,6 +826,7 @@ export class Game {
         return piles;
     }
     checkForWinCondition(isOpponentTurn: boolean) {
+        if (game.hasEnded) return;
         let lastColor = null;
         let lastNumber = null;
         let isWinning = true;
@@ -803,6 +843,7 @@ export class Game {
             }
         }
         if (isWinning) {
+            game.hasEnded = true;
             if (isOpponentTurn) {
                 const resultScreen = document.getElementsByClassName("resultScreen")[0] as HTMLElement;
                 resultScreen.textContent = "You lost!"
@@ -836,11 +877,13 @@ export class Game {
             document.getElementsByClassName("playerLiveCounter")[0].textContent = "Lives: " + this.player.lives;
         }
         if (game.player.cards.length === 0 || game.dealer.lives === 0) {
+            game.hasEnded = true;
             const resultScreen = document.getElementsByClassName("resultScreen")[0] as HTMLElement;
             resultScreen.textContent = "You won!"
             resultScreen.hidden = false;
         }
         if (game.dealer.cards.length === 0 || game.player.lives === 0) {
+            game.hasEnded = true;
             const resultScreen = document.getElementsByClassName("resultScreen")[0] as HTMLElement;
             resultScreen.textContent = "You lost!"
             resultScreen.hidden = false;

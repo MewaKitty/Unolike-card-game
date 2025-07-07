@@ -10,7 +10,8 @@ export interface CardColor {
   name: string,
   color: string,
   text?: string,
-  wild?: boolean
+  wild?: boolean,
+  dark?: string
 }
 
 interface CardNumber {
@@ -43,8 +44,8 @@ export class Card {
   constructor (hidden?: boolean, tags?: string[]) {
     const isWild = Math.random() > 0.93;
     this.color = random(colorData.filter(color => isWild ? color.wild : !color.wild));
-    const isSymbol = this.color.wild ? true : Math.random() > 0.5;
-    this.number = isSymbol ? weightedRandom(symbolData.filter(symbol => symbol.wild === this.color.wild)) : random(numberData.filter(number => !number.unlisted));
+    const isSymbol = this.color.wild ? true : Math.random() > 0.8;
+    this.number = isSymbol ? weightedRandom(symbolData.filter(symbol => symbol.wild === this.color.wild).filter(symbol => !symbol.unlisted)) : random(numberData.filter(number => !number.unlisted));
     if (this.number.color) this.color = colorData.find(color => color.name === this.number.color)!;
     this.hidden = hidden ?? false;
     this.tags = tags ?? [];
@@ -63,13 +64,7 @@ export class Card {
     let pointerDownTime = 0;
     div.addEventListener("pointerdown", e => {
       updateInventoryPlayability();
-      /*if (this.tags.includes("pickup")) {
-        let hasPlayable = false;
-        for (const card of game.player.cards) {
-            if (card.isPlayable()) hasPlayable = true;
-        }
-        if (hasPlayable) return;
-      }*/
+      if (this.tags.includes("pickup") && game.colorChooserActive) return;
       if (!this.tags.includes("pickup") && !wrapper.parentElement?.classList.contains("minipileInner") && !this.isPlayable()) return;
       if (this.tags.includes("discarded") && !wrapper.parentElement?.classList.contains("minipileInner")) return;
       if (!this.tags.includes("pickup") && !wrapper.parentElement?.classList.contains("minipileInner") && wrapper.parentElement !== document.getElementsByClassName("cardRack")[0]) return;
@@ -133,7 +128,7 @@ export class Card {
     const innerElement = this.innerElement;
     element.classList.add("card");
     innerElement.classList.add("cardInner");
-    innerElement.style = `--color: ${this.color.color}; color: ${this.color.text ?? "#333"}`;
+    innerElement.style = `--color: ${this.color.color}; --dark: ${this.color.dark}; --text: ${this.color.text ?? "#333"}`;
     innerElement.textContent = "";
     const cardNameSpan = document.createElement("span");
     cardNameSpan.textContent = this.number.name;
@@ -150,7 +145,7 @@ export class Card {
       cardModifierSpan.textContent = "+ " + this.modifier.name;
       innerElement.appendChild(cardModifierSpan);
     }
-    if (this.hidden) innerElement.style = `--color: #fff; color: black;`;
+    if (this.hidden) innerElement.style = `--color: #fff; --dark: #fff; color: black;`;
     if (this.hidden) innerElement.textContent = `Card`;
   }
   updateAbilityWild (isOpponent: boolean) {
@@ -177,6 +172,10 @@ export class Card {
   }
   playablePiles (forOpponent?: boolean): number[] {
     if (game.dangerCard?.attack === "onlyAllowsNumbers" && (this.number.value === undefined || this.number.value === null)) return [];
+    if (game.onePileLockType === "+2IfColorMatch") {
+      if (!this.color.wild) return [game.onePileLockNumber];
+      return [];
+    }
     if (game.drawAmount && (this.number.draw === undefined || this.number.draw === null) && (this.modifier?.draw === undefined || this.modifier?.draw === null)) return [];
     if (game.playersTurn === false && !forOpponent) return [];
     if (game.drawAmount) return [game.drawPile];
@@ -195,6 +194,13 @@ export class Card {
       if (game.lockedPiles.includes(i) && game.checkLockApplication()) {
         if (!this.color.wild && this.modifier?.actionId !== "lock" && this.number?.actionId !== "disarm") continue;
       }
+      if (i === -1 && game.minipileAction === "war") {
+        if (this.number.value !== undefined && this.number.value !== null && this.number.value >= game.minipile.at(-1)?.number.value!) {
+          return [i];
+        } else {
+          return [];
+        }
+      }
       if (this.playableOn(i === -1 ? game.minipile.at(-1)! : game.discarded[i].at(-1)!)) availablePiles.push(i);
     }
     return availablePiles;
@@ -210,6 +216,8 @@ export class Card {
     if (game.selectedCards.length === 0) {
       if (this.playablePiles().length > 0) return true;
     }
+
+    if (game.minipile.length > 0 && game.minipileAction === "war") return false;
 
     if (game.drawAmount && (this.number.draw === undefined || this.number.draw === null) && (this.modifier?.draw === undefined || this.modifier?.draw === null)) return false;
     

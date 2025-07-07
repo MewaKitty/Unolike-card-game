@@ -3,6 +3,7 @@ import { shuffleArray, randomInteger, wait, random } from "./utils.ts";
 import { Card } from "./cards.ts";
 
 import colorData from "./data/colors.json";
+import symbolData from "./data/symbols.json";
 
 type CardActionFunction = (game: Game) => void | boolean | Promise<void> | Promise<boolean> | Promise<void | boolean>;
 
@@ -70,7 +71,7 @@ export default {
     },
     "randomOccurance": async (game) => {
         if (await game.target.checkForReflectStatus(game.currentPile)) return;
-        switch (randomInteger(1, 8)) {
+        switch (randomInteger(1, 9)) {
             case 1:
                 while (game.actor.cards.length > 2) {
                     game.actor.discardToBottom(game.actor.cards[0]);
@@ -124,6 +125,27 @@ export default {
                     game.actor.discardToBottom(game.target.cards[0]);
                 }
                 document.getElementsByClassName("randomOccuranceLabel" + game.currentPile)[0].textContent = "Discard random card"
+                break;
+            case 9:
+                document.getElementsByClassName("randomOccuranceLabel" + game.currentPile)[0].textContent = "War?"
+                game.isMinipileActive = true;
+                game.minipileAction = "war";
+                document.getElementsByClassName("minipileLabel")[0].textContent = "War";
+                document.getElementsByClassName("minipileDescription")[0].textContent = "Place a card greater or equal to the current number, or drag to inventory."
+                const minipileCard = new Card(false, ["minipile"]);
+                minipileCard.number = symbolData.find(symbol => symbol.actionId === "warStartCard")!;
+                minipileCard.color = colorData.find(color => color.wild === true)!;
+                minipileCard.modifier = null;
+                minipileCard.updateElement();
+                document.getElementsByClassName("minipileInner")[0].textContent = "";
+                document.getElementsByClassName("minipileInner")[0].appendChild(minipileCard.wrapper)
+                game.minipile.push(minipileCard);
+                (document.getElementsByClassName("minipileOuter")[0] as HTMLElement).hidden = false;
+                document.getElementsByClassName("minipileOuter")[0].classList.remove("minipileExit");
+                minipileCard.element.classList.remove("unplayable")
+                document.getElementsByClassName("minipileOuter")[0].classList.remove("unplayable");
+                game.updateCardDiscard();
+                game.updateInventoryPlayability();
         }
     },
     "-2": async (game) => {
@@ -165,6 +187,9 @@ export default {
     },
     "minipile": (game) => {
         game.isMinipileActive = true;
+        game.minipileAction = "minipile";
+        document.getElementsByClassName("minipileLabel")[0].textContent = "Minipile";
+        document.getElementsByClassName("minipileDescription")[0].textContent = "Drag the entire pile to your inventory if you can't play or defend against a plus card.";
         const minipileCard = new Card(false, ["minipile"]);
         document.getElementsByClassName("minipileInner")[0].textContent = "";
         document.getElementsByClassName("minipileInner")[0].appendChild(minipileCard.wrapper)
@@ -330,7 +355,7 @@ export default {
         dangerCardDivInner.classList.add("cardInner");
         dangerCardDiv.appendChild(dangerCardDivInner);
         document.getElementsByClassName("dangerCardArea")[0].appendChild(dangerCardDiv)
-        dangerCardDivInner.style = `--color: #333; color: #fff`;
+        dangerCardDivInner.style = `--color: #333; --dark: #333; --text: #fff`;
         const cardDescriptionSpan = document.createElement("span");
         cardDescriptionSpan.classList.add("cardDescriptionSpan");
         cardDescriptionSpan.textContent = dangerCard.description.join("\n");
@@ -392,5 +417,82 @@ export default {
             if (game.dangerCard?.attack !== "noHealing") game.dealer.health += 2;
             game.dealer.updateHealthCount();
         }
+    },
+    "randomizeHand": async (game) => {
+        const cardCount = game.actor.cards.length;
+        for (const card of game.actor.cards) {
+            game.actor.discardToBottom(card);
+        }
+        for (let i = 0; i < cardCount; i++) {
+            await game.actor.pickup();
+        }
+    },
+    "giveCardAway": async (game) => {
+        document.getElementsByClassName("giveCardAwayLabel")[0].textContent = "Choose a card";
+        if (!game.actor.isOpponent) {
+            game.playersTurn = false;
+            game.giveCardAction = "giveCardAway";
+            (document.getElementsByClassName("giveCardAwayOuter")[0] as HTMLElement).hidden = false;
+            (document.getElementsByClassName("giveCardAwayOuter")[0] as HTMLElement).style.animation = "giveCardAwayEnter 1s"
+            return true;
+        } else {
+            const card = game.dealer.cards[0];
+            game.player.cards.push(card);
+            game.dealer.cards.splice(game.dealer.cards.indexOf(card), 1);
+            card.hidden = false;
+            card.updateElement();
+            document.getElementsByClassName("cardRack")[0].appendChild(card.wrapper);
+        }
+    },
+    "give2CardsAway": async (game) => {
+        document.getElementsByClassName("giveCardAwayLabel")[0].textContent = "Choose a card";
+        if (!game.actor.isOpponent) {
+            game.playersTurn = false;
+            game.giveCardAction = "give2CardsAway";
+            (document.getElementsByClassName("giveCardAwayOuter")[0] as HTMLElement).hidden = false;
+            (document.getElementsByClassName("giveCardAwayOuter")[0] as HTMLElement).style.animation = "giveCardAwayEnter 1s"
+            return true;
+        } else {
+            for (let i = 0; i < 2; i++) {
+                const card = game.dealer.cards[0];
+                game.player.cards.push(card);
+                game.dealer.cards.splice(game.dealer.cards.indexOf(card), 1);
+                card.hidden = false;
+                card.updateElement();
+                document.getElementsByClassName("cardRack")[0].appendChild(card.wrapper);
+            }
+        }
+    },
+    "allGiveCardAway": async (game) => {
+        document.getElementsByClassName("giveCardAwayLabel")[0].textContent = "Choose a card";
+        game.playersTurn = false;
+        game.giveCardAction = "allGiveCardAway";
+        (document.getElementsByClassName("giveCardAwayOuter")[0] as HTMLElement).hidden = false;
+        (document.getElementsByClassName("giveCardAwayOuter")[0] as HTMLElement).style.animation = "giveCardAwayEnter 1s"
+        return true;
+    },
+    "getRidOf7s": async (game) => {
+        for (const card of game.actor.cards) {
+            if (card.number.value === 7) game.actor.discardToBottom(card);
+        }
+    },
+    "+2IfColorMatch": async (game) => {
+        document.getElementsByClassName("randomOccuranceLabel" + game.currentPile)[0].textContent = "Place a color card on top of this"
+        game.onePileLockType = "+2IfColorMatch";
+        game.onePileLockNumber = game.currentPile;
+        if (game.actor.isOpponent) game.opponentTurn();
+        return true;
+    },
+    "shuffleEvenly": async (game) => {
+        if (await game.target.checkForReflectStatus(game.currentPile)) return;
+        const actingHandCount = game.actor.cards.length;
+        const targetHandCount = game.target.cards.length;
+        const allCards = [...game.actor.cards, ...game.target.cards];
+        game.actor.cards.length = 0;
+        game.target.cards.length = 0;
+        shuffleArray(allCards)
+        for (let i = 0; i < actingHandCount; i++) game.actor.cards.push(allCards.shift()!);
+        for (let i = 0; i < targetHandCount; i++) game.target.cards.push(allCards.shift()!);
+        game.updateHands();
     },
 } satisfies Record<string, CardActionFunction> as Record<string, CardActionFunction>
