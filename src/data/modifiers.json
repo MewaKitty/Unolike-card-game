@@ -36,11 +36,11 @@
     },
     {
         "name": "Swap hands",
-        "actionId": "swap",
-        "unlisted": true
+        "actionId": "swap"
     },
     {
         "name": "Resolve a danger card",
-        "actionId": "danger"
+        "actionId": "danger",
+        "weight": 99
     }
 ]

@@ -614,7 +614,8 @@ div.selectedCard {
   font-size: 2rem;
   flex-direction: column;
   padding: 1rem;
-  z-index: 2;
+  z-index: 10;
+  gap: 1rem;
 }
 
 .abilityChooser[hidden] {
@@ -638,16 +639,29 @@ div.selectedCard {
   left: 10vw;
 }
 
-@media (min-width: 950px) and (max-width: 1300px) {
+.dangerCardArea .card {
+  cursor: default;
+}
+
+@media (min-width: 1000px) and (max-width: 1300px) {
   .opponentHand .cardWrapper {
     margin-right: -5.4rem;
   }
 }
 
-@media (min-width: 640px) and (max-width: 949px) {
+@media (min-width: 950px) and (max-width: 999px) {
+  .opponentHand .cardWrapper {
+    margin-right: -5.55rem;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 949px) and (max-height: 900px) {
   :root {
     font-size: 0.8em;
   }
+}
+
+@media (min-width: 640px) and (max-width: 949px) {
   .opponentHand {
     padding: .7rem;
   }
@@ -656,6 +670,92 @@ div.selectedCard {
   }
 }
 
+/*@media (min-height: 511px) and (max-height: 600px) {*/
+@media (min-width: 320px) and (max-width: 750px) {
+  :root {
+    font-size: 0.7em;
+  }  
+  .opponentHand {
+    transform: translateY(-50%);
+    padding: .7rem;
+  }
+  .opponentHand .cardWrapper {
+    margin-right: -6.2rem;
+  }
+
+  .playerCardCount {
+    left: 11rem;
+    bottom: 12.5rem;
+  }
+  .playerLiveCounter {
+    bottom: 12.5rem;
+  }
+  .playerHealthBar {
+    bottom: 12.5rem;
+    height: fit-content;
+  }
+  .opponentHealthBar {
+    top: 6rem;
+    right: 15rem;
+    left: unset;
+    height: fit-content;
+  }
+  .opponentHandLabel.opponentHandLabel {
+    top: 6rem;
+    right: 5rem;
+    font-size: 1.2rem;
+  }
+  .opponentLiveCounter {
+    top: 7.5rem;
+    left: unset;
+    right: 5rem;
+    font-size: 1.2rem;
+  }
+  .opponentCardCount {
+    top: 6rem;
+    font-size: 1.2rem;
+  }
+  .cardRack {
+    left: 0;
+    bottom: 0;
+    width: 100vw;
+  }
+  .pickupPile {
+    left: 2rem;
+    top: unset;
+    bottom: 13rem;
+  }
+  .cardDiscard0 {
+    left: 35vw;
+    top: 20vh;
+  }
+  .cardDiscard1 {
+    left: unset;
+    right: 5vw;
+    top: 20vh;
+  }
+  .cardDiscard2 {
+    left: 35vw;
+    top: 45vh;
+  }
+  .cardDiscard3 {
+    left: unset;
+    right: 5vw;
+    top: 45vh;
+  }
+  .dangerCardArea {
+    left: .5rem;
+    top: 6rem;
+  }
+  .pressureBar {
+    left: .5rem;
+    right: unset;
+    top: 35vh;
+    bottom: unset;
+  }
+}
+
+/*
 @media (min-width: 0px) and (max-width: 639px) {
   :root {
     font-size: 0.5em;
@@ -686,14 +786,102 @@ div.selectedCard {
   .cardDescriptionSpan.cardDescriptionSpan, .cardModifierSpan.cardModifierSpan {
     font-size: 1.2rem;
   }
+}*/
+
+
+@media (min-height: 511px) and (max-height: 550px) {
+  .cardRack {
+    bottom: 0vh;
+  }
 }
 
-
-@media (min-width: 0px) and (max-height: 670px) {
+@media (min-height: 0px) and (max-height: 510px) {
   .pickupPile {
     top: 26.5vh;
   }
+  
+  .opponentHand {
+    transform: translateY(-80%);
+  }
+
+  .opponentHand .cardWrapper {
+    margin-right: -6rem;
+  }
+
+  .pickupPile {
+    top: 12vh;
+    font-size: .9rem;
+  }
+  .cardDiscard {
+    top: 10vh;
+  }
+  .cardRack {
+    bottom: 0vh;
+  }
+  .pressureBar {
+    bottom: 14rem;
+    left: 50vw;
+    width: fit-content;
+    height: fit-content;
+    transform: translateX(-50%);
+  }
+  .playerLiveCounter {
+    bottom: 13rem;
+  }
+  .playerHealthBar {
+    bottom: 13rem;
+    height: fit-content;
+  }
+  .opponentHealthBar {
+    top: 3rem;
+    height: fit-content;
+  }
+  .opponentHandLabel {
+    top: 3rem;
+    left: 80vw;
+  }
+  .opponentLiveCounter {
+    top: 4.5rem;
+    left: 80vw;
+  }
+  .opponentCardCount {
+    top: 6rem;
+  }
+
+  .dangerCardArea {
+    left: unset;
+    right: 8rem;
+    top: 6.5rem;
+  }
 }
+
+@media (min-height: 0px) and (max-height: 409px) {
+  :root {
+    font-size: 0.7em;
+  }
+  .opponentHand {
+    transform: translateY(-80%);
+  }
+
+  .opponentHand .cardWrapper {
+    margin-right: -6rem;
+  }
+
+}
+
+/*
+@media (min-height: 0px) and (max-height: 400px) {
+  :root {
+    font-size: 0.85em;
+  }
+  .cardDiscard .cardWrapper, .cardDiscard .card {
+    height: 5rem;
+    width: 3.5rem;
+  }
+  .cardRack {
+
+  }
+}*/
 
 .giveCardAwayOuter {
   position: absolute;
@@ -701,7 +889,7 @@ div.selectedCard {
   left: 0;
   width: calc(10vw + 10rem);
   height: 14rem;
-  background: #002200;
+  background: #000022;
   border-top-right-radius: 1rem;
   border-bottom-right-radius: 1rem;
   padding: 1rem;
@@ -768,4 +956,58 @@ div.selectedCard {
     top: 40vh;
     height: fit-content;
   }
+}
+
+.pickupQueue {
+  position: absolute;
+  z-index: 1;
+  right: .25rem;
+  bottom: 1.75rem;
+}
+
+.pickupQueue .cardWrapper:nth-child(4) {
+  position: absolute;
+  z-index: 0;
+  position: absolute;
+  right: 0rem;
+  bottom: 0rem;
+}
+
+.pickupQueue .cardWrapper:nth-child(3) {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  z-index: 1;
+}
+
+.pickupQueue .cardWrapper:nth-child(2) {
+  position: absolute;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 2;
+}
+
+.pickupQueue .cardWrapper:nth-child(1) {
+  position: absolute;
+  right: 2.25rem;
+  bottom: 2.25rem;
+  z-index: 3;
+}
+
+.pickupPile > .cardWrapper {
+  z-index: 4;
+  position: relative;
+  right: 2.5rem;
+  bottom: 4rem;
+}
+
+.pickupLabel {
+  z-index: 5;
+  background: #ffffffcf;
+  padding: .25rem;
+  border: 1px solid black;
+  border-radius: .25rem;
+  position: relative;
+  bottom: 3rem;
+  left: 1rem;
 }

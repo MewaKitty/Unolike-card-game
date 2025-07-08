@@ -142,6 +142,22 @@ export const setupDragging = () => {
                             }
                             game.minipile.length = 0;
                             game.isMinipileActive = false;
+                            if (game.minipileAction === "war+2") {
+                                for (let i = 0; i < 2; i++) {
+                                    const secondCard = new Card(true);
+                                    game.dealer.cards.push(secondCard);
+                                    document.getElementsByClassName("cardRack")[0].appendChild(secondCard.wrapper);
+                                }
+                            }
+                            if (game.forcedColor === "greenWild") {
+                                for (let i = 0; i < 3; i++) {
+                                    const secondCard = new Card(true);
+                                    game.dealer.cards.push(secondCard);
+                                    document.getElementsByClassName("cardRack")[0].appendChild(secondCard.wrapper);
+                                }
+                            }
+                            game.forcedColor = "";
+                            game.minipileAction = "";
                             document.getElementsByClassName("minipileOuter")[0].classList.add("minipileExit");
                             updateInventoryPlayability();
                             game.updateCardDiscard();
@@ -156,6 +172,7 @@ export const setupDragging = () => {
                     game.player.cards.splice(game.player.cards.indexOf(draggedCard, 1));
                     document.getElementsByClassName("opponentHand")[0].appendChild(draggedCard.wrapper);
                     if (game.giveCardAction === "allGiveCardAway") {
+                        game.giveCardAction = "";
                         const card = game.dealer.cards[0];
                         game.player.cards.push(card);
                         game.dealer.cards.splice(game.dealer.cards.indexOf(card), 1);
@@ -164,10 +181,12 @@ export const setupDragging = () => {
                         document.getElementsByClassName("cardRack")[0].appendChild(card.wrapper);
                     }
                     if (game.giveCardAction === "give2CardsAway") {
+                        game.giveCardAction = "";
                         document.getElementsByClassName("giveCardAwayLabel")[0].textContent = "Choose another card";
                         game.giveCardAction = "giveCardAway";
                         game.checkForWinCondition(false);
                     } else {
+                        game.giveCardAction = "";
                         (document.getElementsByClassName("giveCardAwayOuter")[0] as HTMLElement).style.animation = "giveCardAwayExit 1s";
                         await game.opponentTurn();
                     }

@@ -137,6 +137,8 @@ export class Game {
     onePileLockNumber: number;
     giveCardAction: string;
     hasEnded: boolean;
+    forcedColor: string;
+    pickupQueue: Card[];
     constructor() {
         /*
         this.player.cards = [];
@@ -183,6 +185,11 @@ export class Game {
         this.onePileLockNumber = 0;
         this.giveCardAction = "";
         this.hasEnded = false;
+        this.forcedColor = "";
+        this.pickupQueue = [];
+        for (let i = 0; i < 4; i++) {
+            this.pickupQueue.push(new Card(true));
+        }
     }
     getPlayer (index: number) {
         if (index === 0) return this.player;
@@ -305,6 +312,7 @@ export class Game {
                 return
             }
         }
+        console.log("Cannot play, picking up.")
         await this.opponentPickup(true);
         this.playersTurn = true;
         this.closedPile = randomInteger(0, 3);
@@ -423,11 +431,15 @@ export class Game {
         card.wrapper.style.transition = "left .5s, top .5s"
         card.tags.splice(card.tags.indexOf("pickup"), 1)
         if (!game.isMinipileActive || !involveMinipile) {
-            for (const secondCard of document.querySelectorAll(".pickupPile .cardWrapper")) {
+            for (const secondCard of document.querySelectorAll(".pickupPile > .cardWrapper")) {
                 if (secondCard === card.wrapper) continue;
                 secondCard.remove();
             }
-            game.pickupCard = new Card(true, ["pickup"])
+            //game.pickupCard = new Card(true, ["pickup"])
+            game.pickupCard = game.pickupQueue.shift()!;
+            game.pickupCard.tags.push("pickup");
+            game.pickupQueue.push(new Card(true));
+            document.getElementsByClassName("pickupQueue")[0].appendChild(game.pickupQueue.at(-1)!.wrapper);
             document.getElementsByClassName("pickupPile")[0].appendChild(game.pickupCard.wrapper)
         }
         game.dealer.health--;
@@ -449,9 +461,25 @@ export class Game {
                             secondCard.tags.splice(card.tags.indexOf("minipile"), 1);
                             secondCard.tags.splice(card.tags.indexOf("discarded"), 1);
                             game.dealer.cards.push(secondCard);
+                            opponentHand.appendChild(secondCard.wrapper);
                         }
+                        if (game.forcedColor === "greenWild") {
+                            for (let i = 0; i < 3; i++) {
+                                const secondCard = new Card(true);
+                                game.dealer.cards.push(secondCard);
+                                document.getElementsByClassName("cardRack")[0].appendChild(secondCard.wrapper);
+                            }
+                        }
+                        game.forcedColor = "";
                         game.minipile.length = 0;
                         game.isMinipileActive = false;
+                        if (game.minipileAction === "war+2") {
+                            for (let i = 0; i < 2; i++) {
+                                const secondCard = new Card(true);
+                                game.dealer.cards.push(secondCard);
+                                opponentHand.appendChild(secondCard.wrapper);
+                            }
+                        }
                         game.minipileAction = "";
                         document.getElementsByClassName("minipileOuter")[0].classList.add("minipileExit");
                         updateInventoryPlayability();
@@ -484,8 +512,12 @@ export class Game {
         updateInventoryPlayability();
         if (card.tags.includes("pickup")) {
             card.tags.splice(card.tags.indexOf("pickup"), 1);
-            game.pickupCard = new Card(true, ["pickup"])
-            for (const card of document.querySelectorAll(".pickupPile .cardWrapper")) card.remove();
+            //game.pickupCard = new Card(true, ["pickup"])
+            game.pickupCard = game.pickupQueue.shift()!;
+            game.pickupCard.tags.push("pickup");
+            game.pickupQueue.push(new Card(true));
+            document.getElementsByClassName("pickupQueue")[0].appendChild(game.pickupQueue.at(-1)!.wrapper);
+            for (const card of document.querySelectorAll(".pickupPile > .cardWrapper")) card.remove();
             pickupPile.appendChild(game.pickupCard.wrapper)
         }
     }
@@ -495,6 +527,7 @@ export class Game {
         cardDiscard.appendChild(card.wrapper)
         console.log(pile)
         card.element.classList.remove("unplayable");
+        game.forcedColor = "";
         if (pile === -1) {
             game.minipile.push(card);
         } else game.discarded[pile].push(card);
@@ -521,6 +554,8 @@ export class Game {
     async applyPlayerDiscardEffects(card: Card, pile: number) {
         console.log("playerDiscard", card);
         if (pile === -1 && game.minipileAction === "war") return;
+        if (pile === -1 && game.minipileAction === "war+2") return;
+        game.forcedColor = "";
         this.actor = this.getPlayer(PlayerIndex.Player)!;
         this.target = this.getPlayer(PlayerIndex.Opponent)!;
         this.currentPile = pile;
@@ -651,6 +686,7 @@ export class Game {
     async applyOpponentDiscardEffects(card: Card, pile: number) {
         console.log("opponentDiscard", card);
         if (pile === -1 && game.minipileAction === "war") return;
+        if (pile === -1 && game.minipileAction === "war+2") return;
         if (game.player.cards.length === 0 || game.dealer.cards.length === 0) return;
         this.actor = this.getPlayer(PlayerIndex.Opponent)!;
         this.target = this.getPlayer(PlayerIndex.Player)!;
@@ -781,6 +817,7 @@ export class Game {
     playableTwins() {
         if (game.selectedCards.length === 1) return game.selectedCards[0].playablePiles();
         if (game.minipile.length > 0 && game.minipileAction === "war") return [];
+        if (game.minipile.length > 0 && game.minipileAction === "war+2") return [];
         const piles = [];
         if (game.selectedCards.length === 2 && !isNaN(+game.selectedCards[0].number.value!) && !isNaN(+game.selectedCards[1].number.value!)) {
             for (let index = -1; index < game.discarded.length; index++) {
@@ -888,6 +925,20 @@ export class Game {
             resultScreen.textContent = "You lost!"
             resultScreen.hidden = false;
         }
+    }
+    calculateScore() {
+        let score = 0;
+        for (const card of game.player.cards) {
+            if (card.color.name === "Yellow" && card.number.value === 13) {
+                score -= 13;
+            } else if (card.number.value) {
+                score += card.number.value;
+            }
+            if (card.color.name === "Red") {
+                score -= 1;
+            }
+        }
+        return score;
     }
     checkLockApplication() {
         let misses = false;

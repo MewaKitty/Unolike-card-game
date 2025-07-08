@@ -1,4 +1,4 @@
-import type { Game } from "./game.ts";
+import { updateInventoryPlayability, type Game } from "./game.ts";
 import { shuffleArray, randomInteger, wait, random } from "./utils.ts";
 import { Card } from "./cards.ts";
 
@@ -243,6 +243,24 @@ export default {
         }
         return true;
     },
+    "allColorDraw": async (game) => {
+        if (await game.target.checkForReflectStatus(game.currentPile)) return;
+        const color = await game.actor.promptColorChooser();
+        game.playersTurn = false;
+        for (let i = 0; i < 25; i++) {
+            const newCard = await game.target.pickup();
+            newCard.hidden = false;
+            newCard.updateElement();
+            if (newCard.color === color) break;
+        }
+        for (let i = 0; i < 25; i++) {
+            const newCard = await game.actor.pickup();
+            newCard.hidden = false;
+            newCard.updateElement();
+            if (newCard.color === color) break;
+        }
+        return true;
+    },
     "lottery": async () => {
         const lotteryDarken = document.getElementsByClassName("lotteryDarken")[0] as HTMLDivElement;
         lotteryDarken.hidden = false;
@@ -260,12 +278,12 @@ export default {
 
         let isWinning = true;
         for (let i = 0; i < 5; i++) {
-            await wait(1000);
+            await wait(500);
             const number = randomInteger(1, 6);
             const lotteryDice = document.createElement("div");
             lotteryDice.classList.add("lotteryDice");
             lotteryDice.textContent = number + "";
-            lotteryDice.style.animation = "1s lotteryDice"
+            lotteryDice.style.animation = ".5s lotteryDice"
             if (number === 6) {
                 lotteryDice.style.background = colorData.find(color => color.wild)!.color;
                 lotteryDice.style.color = colorData.find(color => color.wild)!.text ?? "";
@@ -423,6 +441,8 @@ export default {
         for (const card of game.actor.cards) {
             game.actor.discardToBottom(card);
         }
+        game.actor.cards.length = 0;
+        game.updateHands();
         for (let i = 0; i < cardCount; i++) {
             await game.actor.pickup();
         }
@@ -430,8 +450,8 @@ export default {
     "giveCardAway": async (game) => {
         document.getElementsByClassName("giveCardAwayLabel")[0].textContent = "Choose a card";
         if (!game.actor.isOpponent) {
-            game.playersTurn = false;
             game.giveCardAction = "giveCardAway";
+            updateInventoryPlayability();
             (document.getElementsByClassName("giveCardAwayOuter")[0] as HTMLElement).hidden = false;
             (document.getElementsByClassName("giveCardAwayOuter")[0] as HTMLElement).style.animation = "giveCardAwayEnter 1s"
             return true;
@@ -447,8 +467,8 @@ export default {
     "give2CardsAway": async (game) => {
         document.getElementsByClassName("giveCardAwayLabel")[0].textContent = "Choose a card";
         if (!game.actor.isOpponent) {
-            game.playersTurn = false;
             game.giveCardAction = "give2CardsAway";
+            updateInventoryPlayability();
             (document.getElementsByClassName("giveCardAwayOuter")[0] as HTMLElement).hidden = false;
             (document.getElementsByClassName("giveCardAwayOuter")[0] as HTMLElement).style.animation = "giveCardAwayEnter 1s"
             return true;
@@ -465,8 +485,8 @@ export default {
     },
     "allGiveCardAway": async (game) => {
         document.getElementsByClassName("giveCardAwayLabel")[0].textContent = "Choose a card";
-        game.playersTurn = false;
         game.giveCardAction = "allGiveCardAway";
+        game.updateInventoryPlayability();
         (document.getElementsByClassName("giveCardAwayOuter")[0] as HTMLElement).hidden = false;
         (document.getElementsByClassName("giveCardAwayOuter")[0] as HTMLElement).style.animation = "giveCardAwayEnter 1s"
         return true;
@@ -493,6 +513,62 @@ export default {
         shuffleArray(allCards)
         for (let i = 0; i < actingHandCount; i++) game.actor.cards.push(allCards.shift()!);
         for (let i = 0; i < targetHandCount; i++) game.target.cards.push(allCards.shift()!);
+        game.updateHands();
+    },
+    "forceColor": async (game) => {
+        const color = await game.actor.promptColorChooser();
+        game.forcedColor = color.name;
+        updateInventoryPlayability();
+    },
+    "war+2": async (game) => {
+        document.getElementsByClassName("randomOccuranceLabel" + game.currentPile)[0].textContent = "War?"
+        game.isMinipileActive = true;
+        game.minipileAction = "war+2";
+        document.getElementsByClassName("minipileLabel")[0].textContent = "War + 2";
+        document.getElementsByClassName("minipileDescription")[0].textContent = "Place a card greater or equal to the current number, or drag to inventory."
+        const minipileCard = new Card(false, ["minipile"]);
+        minipileCard.number = symbolData.find(symbol => symbol.actionId === "warStartCard")!;
+        minipileCard.color = colorData.find(color => color.wild === true)!;
+        minipileCard.modifier = null;
+        minipileCard.updateElement();
+        document.getElementsByClassName("minipileInner")[0].textContent = "";
+        document.getElementsByClassName("minipileInner")[0].appendChild(minipileCard.wrapper)
+        game.minipile.push(minipileCard);
+        (document.getElementsByClassName("minipileOuter")[0] as HTMLElement).hidden = false;
+        document.getElementsByClassName("minipileOuter")[0].classList.remove("minipileExit");
+        minipileCard.element.classList.remove("unplayable")
+        document.getElementsByClassName("minipileOuter")[0].classList.remove("unplayable");
+        game.updateCardDiscard();
+        game.updateInventoryPlayability();
+    },
+    "forceGreenWild": async (game) => {
+        game.forcedColor = "greenWild";
+        updateInventoryPlayability();
+    },
+    "all+2": async (game) => {
+        for (let i = 0; i < 2; i++) {
+            await game.actor.pickup();
+            await game.target.pickup();
+        }
+    },
+    "replace4": async (game) => {
+        for (let i = 0; i < 4; i++) {
+            await game.target.pickup();
+            const card = game.target.cards[0];
+            game.target.discardToBottom(card);
+        }
+    },
+    "allReplaceAll": async (game) => {
+        const targetCards = game.target.cards.length;
+        game.target.cards.length = 0;
+        for (let i = 0; i < targetCards; i++) {
+            await game.target.pickup();
+        }
+        const actorCards = game.actor.cards.length;
+        game.actor.cards.length = 0;
+        for (let i = 0; i < actorCards; i++) {
+            await game.actor.pickup();
+        }
         game.updateHands();
     },
 } satisfies Record<string, CardActionFunction> as Record<string, CardActionFunction>

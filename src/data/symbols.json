@@ -14,8 +14,20 @@
         "actionId": "skip"
     },
     {
+        "name": "+1",
+        "draw": 1,
+        "wild": true,
+        "description": "Can defend against other plus cards"
+    },
+    {
         "name": "+2",
         "draw": 2,
+        "wild": true,
+        "description": "Can defend against other plus cards"
+    },
+    {
+        "name": "+3",
+        "draw": 3,
         "wild": true,
         "description": "Can defend against other plus cards"
     },
@@ -24,6 +36,42 @@
         "draw": 4,
         "wild": true,
         "description": "Can defend against other plus cards"
+    },
+    {
+        "name": "+5",
+        "draw": 5,
+        "wild": true,
+        "description": "Can defend against other plus cards"
+    },
+    {
+        "name": "+6",
+        "draw": 6,
+        "wild": true,
+        "description": "Worse than a +5!"
+    },
+    {
+        "name": "+7",
+        "draw": 7,
+        "wild": true,
+        "description": "Slightly better than a +5!"
+    },
+    {
+        "name": "+8",
+        "draw": 8,
+        "wild": true,
+        "description": "Slightly worse than a +10!"
+    },
+    {
+        "name": "+9",
+        "draw": 9,
+        "wild": true,
+        "description": "Not quite a +10"
+    },
+    {
+        "name": "+10",
+        "draw": 10,
+        "wild": true,
+        "description": "Better than a +5!"
     },
     {
         "name": "Blank",
@@ -90,16 +138,15 @@
         "actionId": "randomBox"
     },
     {
-        "name": "+2",
-        "draw": 2,
-        "description": "Now... as a wild card?",
+        "name": "+0",
+        "draw": 0,
+        "description": "Reflect plus cards with this",
         "wild": true
     },
     {
         "name": "+0",
         "draw": 0,
-        "description": "Reflect plus cards with this",
-        "wild": true
+        "description": "Reflect plus cards with this"
     },
     {
         "name": "Skip",
@@ -157,6 +204,12 @@
     {
         "name": "Semi-blank",
         "description": "Any card can be placed on top of this",
+        "color": "Red",
+        "actionId": "purpleBlank"
+    },
+    {
+        "name": "Semi-blank",
+        "description": "Any card can be placed on top of this",
         "color": "Purple",
         "actionId": "purpleBlank"
     },
@@ -169,18 +222,6 @@
         "name": "Color draw",
         "actionId": "colorDraw",
         "wild": true
-    },
-    {
-        "name": "+6",
-        "draw": 6,
-        "wild": true,
-        "description": "Worse than a +5!"
-    },
-    {
-        "name": "+10",
-        "draw": 10,
-        "wild": true,
-        "description": "Better than a +5!"
     },
     {
         "name": "Blue random occurances",
@@ -257,11 +298,10 @@
     {
         "name": "+2 if color match",
         "description": "Discard color card, +2 if matching color.",
-        "weight": 99,
         "actionId": "+2IfColorMatch"
     },
     {
-        "name": "All give card away",
+        "name": "All give a card away",
         "description": "Give away a card, and receive a card.",
         "actionId": "allGiveCardAway"
     },
@@ -275,7 +315,44 @@
     {
         "name": "Give 2 cards away",
         "description": "Give 2 cards away to the opponent",
-        "actionId": "give2CardsAway",
+        "actionId": "give2CardsAway"
+    },
+    {
+        "name": "Force color",
+        "description": "Forces a color for the next round.",
+        "actionId": "forceColor",
+        "wild": true
+    },
+    {
+        "name": "War + 2",
+        "actionId": "forceColor",
+        "wild": true
+    },
+    {
+        "name": "Force green or wild",
+        "actionId": "forceGreenWild",
+        "wild": true
+    },
+    {
+        "name": "All color draw",
+        "actionId": "allColorDraw",
+        "wild": true,
         "weight": 99
+    },
+    {
+        "name": "All plus 2! cards",
+        "description": "2! = 2*1 = 2 cards",
+        "color": "Red",
+        "actionId": "all+2"
+    },
+    {
+        "name": "Replace 4",
+        "wild": true,
+        "actionId": "replace4"
+    },
+    {
+        "name": "All replace all",
+        "wild": true,
+        "actionId": "allReplaceAll"
     }
 ]

@@ -29,10 +29,22 @@ app.appendChild(cardRack);
 export const pickupPile = document.createElement("div");
 pickupPile.classList.add("pickupPile");
 const pickupLabel = document.createElement("span");
+pickupLabel.classList.add("pickupLabel");
 pickupPile.appendChild(pickupLabel);
 pickupLabel.textContent = "Pick up here until you can discard a card";
 pickupPile.appendChild((game.pickupCard).wrapper)
 app.appendChild(pickupPile);
+
+game.pickupCard.hidden = false;
+game.pickupCard.updateElement();
+const pickupQueue = document.createElement("div");
+pickupQueue.classList.add("pickupQueue");
+for (let i = 0; i < 4; i++) {
+    game.pickupQueue[i].hidden = false;
+    game.pickupQueue[i].updateElement();
+    pickupQueue.appendChild(game.pickupQueue[i].wrapper);
+}
+pickupPile.appendChild(pickupQueue);
 
 let pointerDownTime = 0
 pickupPile.addEventListener("pointerdown", async () => {

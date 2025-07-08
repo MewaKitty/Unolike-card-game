@@ -44,12 +44,12 @@ export class Card {
   constructor (hidden?: boolean, tags?: string[]) {
     const isWild = Math.random() > 0.93;
     this.color = random(colorData.filter(color => isWild ? color.wild : !color.wild));
-    const isSymbol = this.color.wild ? true : Math.random() > 0.8;
+    const isSymbol = this.color.wild ? true : Math.random() > 0.7;
     this.number = isSymbol ? weightedRandom(symbolData.filter(symbol => symbol.wild === this.color.wild).filter(symbol => !symbol.unlisted)) : random(numberData.filter(number => !number.unlisted));
     if (this.number.color) this.color = colorData.find(color => color.name === this.number.color)!;
     this.hidden = hidden ?? false;
     this.tags = tags ?? [];
-    this.modifier = ((this.number.description || this.number.abilityWild) && !this.number.draw) ? null : (Math.random() > 0.5 ? weightedRandom(modifierData.filter(modifier => !modifier.unlisted)) : null)
+    this.modifier = ((this.number.description || this.number.abilityWild) && !this.number.draw) ? null : (Math.random() > 0.5 ? weightedRandom(modifierData) : null)
     if (this.number.value === 0 || this.number.value === 7) this.modifier = modifierData.find(modifier => modifier.actionId === "swap") ?? null;
     const wrapper = document.createElement("div");
     wrapper.classList.add("cardWrapper");
@@ -176,6 +176,7 @@ export class Card {
       if (!this.color.wild) return [game.onePileLockNumber];
       return [];
     }
+    if (game.giveCardAction) return [];
     if (game.drawAmount && (this.number.draw === undefined || this.number.draw === null) && (this.modifier?.draw === undefined || this.modifier?.draw === null)) return [];
     if (game.playersTurn === false && !forOpponent) return [];
     if (game.drawAmount) return [game.drawPile];
@@ -194,8 +195,16 @@ export class Card {
       if (game.lockedPiles.includes(i) && game.checkLockApplication()) {
         if (!this.color.wild && this.modifier?.actionId !== "lock" && this.number?.actionId !== "disarm") continue;
       }
+      if (game.forcedColor && (game.forcedColor === "greenWild" ? (this.color.name !== "Green" && !this.color.wild) : (this.color.name !== game.forcedColor))) continue;
       if (i === -1 && game.minipileAction === "war") {
         if (this.number.value !== undefined && this.number.value !== null && this.number.value >= game.minipile.at(-1)?.number.value!) {
+          return [i];
+        } else {
+          return [];
+        }
+      }
+      if (i === -1 && game.minipileAction === "war+2") {
+        if ((this.number.value ?? 0) >= game.minipile.at(-1)?.number.value!) {
           return [i];
         } else {
           return [];
@@ -210,6 +219,8 @@ export class Card {
     if (game.reobtainChooserActive) return false;
     if (game.reflectCard === this) return true;
     if (game.reflectCard) return false;
+    if (game.giveCardAction) return true;
+    if (game.forcedColor && (game.forcedColor === "greenWild" ? (this.color.name !== "Green" && !this.color.wild) : (this.color.name !== game.forcedColor))) return false;
 
     if (game.selectedCards.includes(this)) return true;
 
@@ -218,6 +229,7 @@ export class Card {
     }
 
     if (game.minipile.length > 0 && game.minipileAction === "war") return false;
+    if (game.minipile.length > 0 && game.minipileAction === "war+2") return false;
 
     if (game.drawAmount && (this.number.draw === undefined || this.number.draw === null) && (this.modifier?.draw === undefined || this.modifier?.draw === null)) return false;
     
