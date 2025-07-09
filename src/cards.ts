@@ -42,14 +42,14 @@ export class Card {
   tags: string[]
   modifier: CardModifier | null
   constructor (hidden?: boolean, tags?: string[]) {
-    const isWild = Math.random() > 0.93;
+    const isWild = Math.random() > 0.63;
     this.color = random(colorData.filter(color => isWild ? color.wild : !color.wild));
     const isSymbol = this.color.wild ? true : Math.random() > 0.7;
     this.number = isSymbol ? weightedRandom(symbolData.filter(symbol => symbol.wild === this.color.wild).filter(symbol => !symbol.unlisted)) : random(numberData.filter(number => !number.unlisted));
     if (this.number.color) this.color = colorData.find(color => color.name === this.number.color)!;
     this.hidden = hidden ?? false;
     this.tags = tags ?? [];
-    this.modifier = ((this.number.description || this.number.abilityWild) && !this.number.draw) ? null : (Math.random() > 0.5 ? weightedRandom(modifierData) : null)
+    this.modifier = ((this.number.description || this.number.abilityWild) && !this.number.draw) ? null : (Math.random() > 0.5 ? weightedRandom(modifierData.filter(modifier => this.number.value !== undefined && this.number.value !== null ? true : !modifier.modifies?.includes("number"))) : null)
     if (this.number.value === 0 || this.number.value === 7) this.modifier = modifierData.find(modifier => modifier.actionId === "swap") ?? null;
     const wrapper = document.createElement("div");
     wrapper.classList.add("cardWrapper");
@@ -128,7 +128,8 @@ export class Card {
     const innerElement = this.innerElement;
     element.classList.add("card");
     innerElement.classList.add("cardInner");
-    innerElement.style = `--color: ${this.color.color}; --dark: ${this.color.dark}; --text: ${this.color.text ?? "#333"}`;
+    element.style = `--color: ${this.color.color}; --dark: ${this.color.dark}; --text: ${this.color.text ?? "#333"}`;
+    if (this.number.actionId === "tower") element.classList.add("towerCard");
     innerElement.textContent = "";
     const cardNameSpan = document.createElement("span");
     cardNameSpan.textContent = this.number.name;
@@ -145,7 +146,8 @@ export class Card {
       cardModifierSpan.textContent = "+ " + this.modifier.name;
       innerElement.appendChild(cardModifierSpan);
     }
-    if (this.hidden) innerElement.style = `--color: #fff; --dark: #fff; color: black;`;
+    if (this.number.actionId === "tower") return;
+    if (this.hidden) element.style = `--color: #fff; --dark: #fff; color: black;`;
     if (this.hidden) innerElement.textContent = `Card`;
   }
   updateAbilityWild (isOpponent: boolean) {
@@ -187,6 +189,14 @@ export class Card {
       }
       if (hasNon99Card) return [];
     }
+    if (this.number.actionId === "doubles") {
+      if (forOpponent) {
+        if (!game.dealer.doublesCardAvailable) return [];
+      } else {
+        if (!game.player.doublesCardAvailable) return [];
+      }
+    }
+    if (this.number.actionId === "tower") return [];
     let availablePiles = [];
     for (let i = -1; i < 4; i++) {
       if (i === game.closedPile) continue;
@@ -257,6 +267,23 @@ export class Card {
 
     // Handle the twin rule
     if (this.number.value === null || this.number.value === undefined) return false;
+    // Handle the succession rule
+    if (game.selectedCards.length > 0) {
+        const sorted = [...game.selectedCards, this].sort((a, b) => a.number.value! - b.number.value!);
+        console.log(sorted);
+        let last = null;
+        let isValid = true;
+        for (const card of sorted) {
+            if (last === null) {
+                last = card;
+                continue;
+            }
+            if (card.number.value !== last.number.value! + 1 && last.number.actionId !== "#") isValid = false;
+            last = card;
+        }
+        console.log("isValid: " + isValid)
+        if (isValid) return true;
+    }
     if (game.selectedCards.length >= 2) return game.selectedCards.includes(this);
     if (game.selectedCards.length === 1) {
       if (game.selectedCards[0].number.value === null || game.selectedCards[0].number.value === undefined) return false;
@@ -269,6 +296,9 @@ export class Card {
         if (game.selectedCards[0].number.value! + this.number.value === discard.at(-1)!.number.value) return true;
         if (game.selectedCards[0].number.actionId === "#" && numberData.map(number => number.value).includes(discard.at(-1)?.number.value! - this.number.value)) return true;
         if (this.number.actionId === "#" && numberData.map(number => number.value).includes(discard.at(-1)?.number.value! - game.selectedCards[0].number.value)) return true;
+      }
+      if (this.number.value === game.selectedCards[0].number.value + 1 || this.number.actionId === "#") {
+        return true;
       }
       return false;
     };

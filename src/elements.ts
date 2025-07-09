@@ -2,7 +2,9 @@ import { game, updateInventoryPlayability } from "./game.ts";
 import { setupDragging } from "./dragging.ts";
 import { Card } from "./cards.ts";
 import colorData from "./data/colors.json";
+import towerData from "./data/towers.json";
 import abilityData from "./data/abilities.json";
+import symbolData from "./data/symbols.json";
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 
@@ -67,16 +69,40 @@ pickupPile.addEventListener("pointerup", async () => {
     game.pickupCard.element.style.top = "";
     game.pickupCard.element.classList.remove("dragging")
     await game.animateElementMovement(game.pickupCard.element, placeholderDiv, game.pickupCard.wrapper)
+    document.getElementsByClassName("pickupPile")[0].classList.add("animate");
     placeholderDiv.remove()
     if (game.pickupCard.number.actionId === "draw3More") game.drawAmount += 3;
     game.player.health--;
+    const targetCard = game.pickupCard;
     game.addToRack(game.pickupCard)
+    if (targetCard.modifier?.actionId === "transfer") {
+        for (const card of game.player.cards) {
+            if (card.number === targetCard.number) {
+                game.dealer.cards.push(card);
+                game.player.cards.splice(game.player.cards.indexOf(card));
+                document.getElementsByClassName("opponentHand")[0].appendChild(card.wrapper);
+                console.info("trasfer")
+                game.updateHands();
+            }
+        }
+    }
     console.debug("draw", game.drawAmount)
     for (let i = 0; i < Math.min(game.drawAmount - 1, 30) + (game.dangerCard?.attack === "plusOneExtra" ? 1 : 0); i++) {
         const newCard = new Card();
         if (newCard.number.actionId === "draw3More") game.drawAmount += 3;
         game.player.health--;
         game.addToRack(newCard)
+        if (newCard.modifier?.actionId === "transfer") {
+            for (const card of game.player.cards) {
+                if (card.number === newCard.number) {
+                    game.dealer.cards.push(card);
+                    game.player.cards.splice(game.player.cards.indexOf(card));
+                    document.getElementsByClassName("opponentHand")[0].appendChild(card.wrapper);
+                    console.info("trasfer")
+                    game.updateHands();
+                }
+            }
+        }
     }
     cardRack.scrollTo({
         left: cardRack.scrollWidth,
@@ -287,6 +313,11 @@ lotteryRow.classList.add("lotteryRow");
 lotteryRow.hidden = true;
 app.appendChild(lotteryRow);
 
+const cardLotteryRow = document.createElement("div");
+cardLotteryRow.classList.add("cardLotteryRow");
+cardLotteryRow.hidden = true;
+app.appendChild(cardLotteryRow);
+
 const lotteryDarken = document.createElement("div");
 lotteryDarken.classList.add("lotteryDarken");
 lotteryDarken.hidden = true;
@@ -308,6 +339,16 @@ lotteryRow.addEventListener("animationend", e => {
         lotteryRow.textContent = "";
         lotteryRow.hidden = true;
         lotteryRow.style.animation = "";
+        lotteryResult.textContent = "";
+        lotteryResult.hidden = true;
+    };
+})
+
+cardLotteryRow.addEventListener("animationend", e => {
+    if (e.animationName === "lotteryOpacityOut") {
+        cardLotteryRow.textContent = "";
+        cardLotteryRow.hidden = true;
+        cardLotteryRow.style.animation = "";
         lotteryResult.textContent = "";
         lotteryResult.hidden = true;
     };
@@ -443,3 +484,46 @@ giveCardAwayOuter.addEventListener("animationend", e => {
         giveCardAwayOuter.hidden = true;
     }
 })
+
+const cardLoanRemaining = document.createElement("span");
+cardLoanRemaining.classList.add("cardLoanRemaining");
+app.appendChild(cardLoanRemaining);
+
+
+const towerChooser = document.createElement("div");
+towerChooser.classList.add("towerChooser");
+const towerChooserLabel = document.createElement("span");
+towerChooserLabel.textContent = "Choose a tower";
+towerChooser.appendChild(towerChooserLabel);
+const towerChooserInner = document.createElement("div");
+towerChooserInner.classList.add("towerChooserInner");
+for (const tower of towerData) {
+    const towerEntry = document.createElement("div");
+    towerEntry.classList.add("towerEntry")
+    towerEntry.style.background = tower.color;
+    towerChooserInner.appendChild(towerEntry);
+    towerEntry.addEventListener("click", () => {
+        for (const card of game.player.cards) {
+            if (card.color === tower && card.number.actionId === "tower") {
+                card.wrapper.remove();
+                game.player.cards.splice(game.player.cards.indexOf(card), 1);
+            }
+        }
+        for (const card of game.dealer.cards) {
+            if (card.color === tower && card.number.actionId === "tower") {
+                card.wrapper.remove();
+                game.dealer.cards.splice(game.dealer.cards.indexOf(card), 1);
+            }
+        }
+        const card = new Card();
+        card.color = tower;
+        card.number = symbolData.find(symbol => symbol.actionId === "tower")!;
+        card.modifier = null;
+        card.updateElement();
+        game.addToRack(card);
+    })
+}
+towerChooser.appendChild(towerChooserInner)
+//towerChooser.hidden = true;
+//towerChooser.classList.add("colorChooserExit");
+app.appendChild(towerChooser);

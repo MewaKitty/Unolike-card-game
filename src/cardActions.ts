@@ -259,6 +259,7 @@ export default {
             newCard.updateElement();
             if (newCard.color === color) break;
         }
+        updateInventoryPlayability();
         return true;
     },
     "lottery": async () => {
@@ -491,6 +492,14 @@ export default {
         (document.getElementsByClassName("giveCardAwayOuter")[0] as HTMLElement).style.animation = "giveCardAwayEnter 1s"
         return true;
     },
+    "allGive2CardsAway": async (game) => {
+        document.getElementsByClassName("giveCardAwayLabel")[0].textContent = "Choose a card";
+        game.giveCardAction = "allGive2CardsAway";
+        game.updateInventoryPlayability();
+        (document.getElementsByClassName("giveCardAwayOuter")[0] as HTMLElement).hidden = false;
+        (document.getElementsByClassName("giveCardAwayOuter")[0] as HTMLElement).style.animation = "giveCardAwayEnter 1s"
+        return true;
+    },
     "getRidOf7s": async (game) => {
         for (const card of game.actor.cards) {
             if (card.number.value === 7) game.actor.discardToBottom(card);
@@ -571,4 +580,71 @@ export default {
         }
         game.updateHands();
     },
+    "revealNext5": async (game) => {
+        if (game.actor.isOpponent) return;
+        game.pickupCard.hidden = false;
+        game.pickupCard.updateElement();
+        for (const card of game.pickupQueue) {
+            card.hidden = false;
+            card.updateElement();
+        }
+    },
+    "cardRemovalChance": async (game) => {
+        const lotteryDarken = document.getElementsByClassName("lotteryDarken")[0] as HTMLDivElement;
+        lotteryDarken.hidden = false;
+        lotteryDarken.style.animation = "1s lotteryOpacityIn";
+
+        (document.getElementsByClassName("cardLotteryRow")[0] as HTMLElement).hidden = false;
+
+        const targetColor = random(colorData.filter(color => !color.wild));
+        const targetNumber = randomInteger(1, 8);
+
+        const lotteryDice = document.createElement("div");
+        lotteryDice.classList.add("lotteryDice");
+        lotteryDice.classList.add("lotteryDiceLong");
+        lotteryDice.textContent = targetColor.name;
+        lotteryDice.style.animation = "1s lotteryDice"
+        lotteryDice.style.background = targetColor.color;
+        document.getElementsByClassName("cardLotteryRow")[0].appendChild(lotteryDice);
+
+        await wait(500);
+        const lotterDiceB = document.createElement("div");
+        lotterDiceB.classList.add("lotteryDice");
+        lotterDiceB.textContent = targetNumber + "";
+        lotterDiceB.style.animation = ".5s lotteryDice"
+        lotterDiceB.style.background = colorData.find(color => color.wild)!.color;
+        lotterDiceB.style.color = colorData.find(color => color.wild)!.text ?? "";
+        lotterDiceB.style.left = `calc(50vw - 8.5rem + ${2 * 6}rem)`
+        document.getElementsByClassName("cardLotteryRow")[0].appendChild(lotterDiceB)
+        
+        await wait(1000);
+        const resultDiv = document.getElementsByClassName("lotteryResult")[0] as HTMLDivElement;
+        resultDiv.hidden = false;
+        resultDiv.style.animation = ".5s lotteryOpacityIn";
+        let hasWon = false;
+        for (const card of game.actor.cards) {
+            if (card.color.name === targetColor.name && card.number.value === targetNumber) {
+                hasWon = true;
+                game.actor.discardToBottom(card);
+            }
+        }
+        resultDiv.textContent = hasWon ? "Card discarded!" : "Better luck next time!"
+        await wait(1500);
+        lotteryDarken.style.animation = ".5s lotteryOpacityOut";
+        resultDiv.style.animation = ".5s lotteryOpacityOut";
+        (document.getElementsByClassName("cardLotteryRow")[0] as HTMLElement).style.animation = ".5s lotteryOpacityOut";
+    },
+    "4CardLoan": async (game) => {
+        for (let i = 0; i < 4; i++) {
+            await game.actor.pickup();
+        }
+        if (game.actor.isOpponent) {
+            for (let i = 0; i < 4; i++) {
+                await game.opponentTurn();
+            }
+        } else {
+            game.cardLoanRemaining = 4;
+            document.getElementsByClassName("cardLoanRemaining")[0].textContent = "Remaining card payments: " + game.cardLoanRemaining;
+        }
+    }
 } satisfies Record<string, CardActionFunction> as Record<string, CardActionFunction>

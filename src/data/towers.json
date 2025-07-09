@@ -1,0 +1,22 @@
+[
+    {
+        "name": "Red",
+        "color": "#ff9f9f",
+        "dark": "#9f0000"
+    },
+    {
+        "name": "Green",
+        "color": "#aaffaa",
+        "dark": "#009900"
+    },
+    {
+        "name": "Yellow",
+        "color": "#ffffaa",
+        "dark": "#999900"
+    },
+    {
+        "name": "Blue",
+        "color": "#aaaaff",
+        "dark": "#000099"
+    }
+]

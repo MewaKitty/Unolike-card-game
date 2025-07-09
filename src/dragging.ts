@@ -111,19 +111,49 @@ export const setupDragging = () => {
                     };
                     game.selectedCards.length = 0;
                     game.checkForWinCondition(false);
-                    if (draggedCard?.number.actionId !== "skip" && !skip) game.opponentTurn();
+                    if (draggedCard?.number.actionId !== "skip" && !skip) {
+                        if (game.cardLoanRemaining === 0) await game.opponentTurn();
+                        if (game.cardLoanRemaining > 0) {
+                            game.cardLoanRemaining--;
+                            document.getElementsByClassName("cardLoanRemaining")[0].textContent = "Remaining card payments: " + game.cardLoanRemaining;
+                        }
+                    }
                     updateInventoryPlayability();
                 }
                 if (destination === cardRack) {
                     if (!game.player.cards.includes(draggedCard)) {
                         if (draggedCard.number.actionId === "draw3More") game.drawAmount += 3;
                         game.player.health--;
+                        document.getElementsByClassName("pickupPile")[0].classList.add("animate");
                         game.addToRack(draggedCard);
+                        if (draggedCard.modifier?.actionId === "transfer") {
+                            for (const card of game.player.cards) {
+                                if (card.number === draggedCard.number) {
+                                    game.dealer.cards.push(card);
+                                    game.player.cards.splice(game.player.cards.indexOf(card));
+                                    document.getElementsByClassName("opponentHand")[0].appendChild(card.wrapper);
+                                    console.info("trasfer")
+                                    game.updateHands();
+                                }
+                            }
+                        }
                         for (let i = 0; i < Math.min(game.drawAmount - 1, 30) + (game.dangerCard?.attack === "plusOneExtra" ? 1 : 0); i++) {
                             const newCard = new Card();
                             if (newCard.number.actionId === "draw3More") game.drawAmount += 3;
                             game.player.health--;
+                            document.getElementsByClassName("pickupPile")[0].classList.add("animate");
                             game.addToRack(newCard)
+                            if (newCard.modifier?.actionId === "transfer") {
+                                for (const card of game.player.cards) {
+                                    if (card.number === newCard.number) {
+                                        game.dealer.cards.push(card);
+                                        game.player.cards.splice(game.player.cards.indexOf(card));
+                                        document.getElementsByClassName("opponentHand")[0].appendChild(card.wrapper);
+                                        console.info("trasfer")
+                                        game.updateHands();
+                                    }
+                                }
+                            }
                         }
                         cardRack.scrollTo({
                             left: cardRack.scrollWidth,
@@ -161,7 +191,11 @@ export const setupDragging = () => {
                             document.getElementsByClassName("minipileOuter")[0].classList.add("minipileExit");
                             updateInventoryPlayability();
                             game.updateCardDiscard();
-                            game.opponentTurn();
+                            if (game.cardLoanRemaining === 0) await game.opponentTurn();
+                            if (game.cardLoanRemaining > 0) {
+                                game.cardLoanRemaining--;
+                                document.getElementsByClassName("cardLoanRemaining")[0].textContent = "Remaining card payments: " + game.cardLoanRemaining;
+                            }
                         }
                         updateInventoryPlayability();
                         game.updateCardDiscard();
@@ -185,10 +219,20 @@ export const setupDragging = () => {
                         document.getElementsByClassName("giveCardAwayLabel")[0].textContent = "Choose another card";
                         game.giveCardAction = "giveCardAway";
                         game.checkForWinCondition(false);
+                    } else if (game.giveCardAction === "allGive2CardsAway") {
+                        game.giveCardAction = "";
+                        document.getElementsByClassName("giveCardAwayLabel")[0].textContent = "Choose another card";
+                        game.giveCardAction = "allGiveCardAway";
+                        game.checkForWinCondition(false);
                     } else {
                         game.giveCardAction = "";
                         (document.getElementsByClassName("giveCardAwayOuter")[0] as HTMLElement).style.animation = "giveCardAwayExit 1s";
-                        await game.opponentTurn();
+
+                        if (game.cardLoanRemaining === 0) await game.opponentTurn();
+                        if (game.cardLoanRemaining > 0) {
+                            game.cardLoanRemaining--;
+                            document.getElementsByClassName("cardLoanRemaining")[0].textContent = "Remaining card payments: " + game.cardLoanRemaining;
+                        }
                     }
                 }
             }

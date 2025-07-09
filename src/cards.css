@@ -17,6 +17,12 @@
   user-select: none;
 }
 
+.towerCard {
+  border: 2px solid var(--dark);
+  cursor: not-allowed;
+  background: #ffffff22;
+}
+
 .abilityCard {
   height: 15rem;
   width: 11rem;

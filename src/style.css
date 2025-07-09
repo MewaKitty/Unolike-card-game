@@ -47,6 +47,9 @@ body, html {
     background: var(--dark);
     color: white;
   }
+  .towerCard.towerCard {
+    border: 2px solid var(--color);
+  }
 }
 
 #app {
@@ -282,7 +285,7 @@ div.selectedCard {
   opacity: 0.5;
 }
 
-.colorChooser {
+.colorChooser, .towerChooser {
   position: absolute;
   top: 30vh;
   right: 0;
@@ -298,6 +301,9 @@ div.selectedCard {
   font-weight: 500;
   transition: right .5s;
   z-index: 2;
+}
+.towerChooser {
+  background: #030300dd;
 }
 
 .colorChooserInner {
@@ -384,6 +390,15 @@ div.selectedCard {
   z-index: 3;
 }
 
+.cardLotteryRow {
+  display: flex;
+  position: absolute;
+  top: 40vh;
+  left: calc(50vw - 8.5rem);
+  gap: 1rem;
+  z-index: 3;
+}
+
 .lotteryDice {
   width: 5rem;
   height: 5rem;
@@ -395,6 +410,9 @@ div.selectedCard {
   border-radius: .5rem;
   box-sizing: border-box;
   z-index: 3;
+}
+.lotteryDiceLong {
+  width: 11rem;
 }
 
 @keyframes lotteryDice {
@@ -489,7 +507,7 @@ div.selectedCard {
   align-items: center;
   justify-content: center;
   font-size: 2rem;
-  z-index: 2;
+  z-index: 10;
 }
 
 .resultScreen[hidden] {
@@ -753,6 +771,16 @@ div.selectedCard {
     top: 35vh;
     bottom: unset;
   }
+  .drawAmountText {
+    position: absolute;
+    left: 12rem;
+    top: unset;
+    bottom: 16rem;
+  }
+  .cardLoanRemaining.cardLoanRemaining {
+    left: 12rem;
+    bottom: 16rem;
+  }
 }
 
 /*
@@ -898,6 +926,7 @@ div.selectedCard {
   display: flex;
   gap: 1rem;
   transition: left .5s;
+  z-index: 6;
 }
 
 .giveCardAwayOuter[hidden] {
@@ -980,11 +1009,41 @@ div.selectedCard {
   z-index: 1;
 }
 
+.pickupPile.animate .pickupQueue .cardWrapper:nth-child(3) {
+  animation: cardMoveUp3 .3s;
+}
+
+@keyframes cardMoveUp3 {
+  from {
+    right: 0rem;
+    bottom: 0rem;
+  }
+  to {
+    right: .75rem;
+    bottom: .75rem;
+  }
+}
+
 .pickupQueue .cardWrapper:nth-child(2) {
   position: absolute;
   right: 1.5rem;
   bottom: 1.5rem;
   z-index: 2;
+}
+
+.pickupPile.animate .pickupQueue .cardWrapper:nth-child(2) {
+  animation: cardMoveUp2 .3s;
+}
+
+@keyframes cardMoveUp2 {
+  from {
+    right: .75rem;
+    bottom: .75rem;
+  }
+  to {
+    right: 1.5rem;
+    bottom: 1.5rem;
+  }
 }
 
 .pickupQueue .cardWrapper:nth-child(1) {
@@ -994,11 +1053,41 @@ div.selectedCard {
   z-index: 3;
 }
 
+.pickupPile.animate .pickupQueue .cardWrapper:nth-child(1) {
+  animation: cardMoveUp1 .3s;
+}
+
+@keyframes cardMoveUp1 {
+  from {
+    right: 1.5rem;
+    bottom: 1.5rem;
+  }
+  to {
+    right: 2.25rem;
+    bottom: 2.25rem;
+  }
+}
+
 .pickupPile > .cardWrapper {
   z-index: 4;
   position: relative;
   right: 2.5rem;
   bottom: 4rem;
+}
+
+.pickupPile.animate > .cardWrapper {
+  animation: cardMoveUp0 .3s;
+}
+
+@keyframes cardMoveUp0 {
+  from {
+    right: 1.75rem;
+    bottom: 3.25rem;
+  }
+  to {
+    right: 2.5rem;
+    bottom: 4rem;
+  }
 }
 
 .pickupLabel {
@@ -1010,4 +1099,24 @@ div.selectedCard {
   position: relative;
   bottom: 3rem;
   left: 1rem;
+}
+
+.cardLoanRemaining {
+  position: absolute;
+  bottom: 14rem;
+  left: 70rem;
+  font-weight: bold;
+}
+
+.towerEntry {
+  width: 8vh;
+  height: 8vh;
+  border-radius: .3rem;
+  cursor: pointer;
+}
+
+.towerChooserInner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
 }

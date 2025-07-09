@@ -71,7 +71,8 @@
         "name": "+10",
         "draw": 10,
         "wild": true,
-        "description": "Better than a +5!"
+        "description": "Better than a +5!",
+        "weight": 99
     },
     {
         "name": "Blank",
@@ -336,8 +337,7 @@
     {
         "name": "All color draw",
         "actionId": "allColorDraw",
-        "wild": true,
-        "weight": 99
+        "wild": true
     },
     {
         "name": "All plus 2! cards",
@@ -354,5 +354,38 @@
         "name": "All replace all",
         "wild": true,
         "actionId": "allReplaceAll"
+    },
+    {
+        "name": "Reveal next 5 pickup cards",
+        "color": "Blue",
+        "actionId": "revealNext5",
+        "weight": 99
+    },
+    {
+        "name": "Card removal chance",
+        "actionId": "cardRemovalChance"
+    },
+    {
+        "name": "All give 2 cards",
+        "description": "Give away 2 cards, and receive 2 cards.",
+        "actionId": "allGive2CardsAway",
+        "wild": true
+    },
+    {
+        "name": "Card loan",
+        "description": "Running out? Gain and play 4 cards in a row!",
+        "actionId": "4CardLoan",
+        "wild": true,
+        "weight": 99
+    },
+    {
+        "name": "Doubles",
+        "description": "Only allowed to play this 1 in 36 turns!",
+        "actionId": "doubles"
+    },
+    {
+        "name": "Tower",
+        "actionId": "tower",
+        "unlisted": true
     }
 ]

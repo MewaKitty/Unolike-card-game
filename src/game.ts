@@ -36,6 +36,7 @@ class Player {
     lives: number;
     recentCards: {card: Card, pile: number}[];
     cards: Card[];
+    doublesCardAvailable: boolean;
     constructor (isOpponent: boolean) {
         this.isOpponent = isOpponent;
         this.ability = null;
@@ -43,6 +44,7 @@ class Player {
         this.lives = 2;
         this.recentCards = [];
         this.cards = [];
+        this.doublesCardAvailable = randomInteger(1, 36) === 1;
     }
     /*
     get cards () {
@@ -139,6 +141,7 @@ export class Game {
     hasEnded: boolean;
     forcedColor: string;
     pickupQueue: Card[];
+    cardLoanRemaining: number;
     constructor() {
         /*
         this.player.cards = [];
@@ -176,7 +179,7 @@ export class Game {
         this.pileContents = [];
         this.colorChooserPromise = null;
         this.dangerCard = null;
-        for (let i = 0; i < 25; i++) {
+        for (let i = 0; i < 7; i++) {
             this.player.cards.push(new Card())
             this.dealer.cards.push(new Card(true))
         }
@@ -190,6 +193,7 @@ export class Game {
         for (let i = 0; i < 4; i++) {
             this.pickupQueue.push(new Card(true));
         }
+        this.cardLoanRemaining = 4;
     }
     getPlayer (index: number) {
         if (index === 0) return this.player;
@@ -269,6 +273,7 @@ export class Game {
             cardActions.danger(game);
         }
         game.checkForWinCondition(false);
+        game.dealer.doublesCardAvailable = randomInteger(1, 36) === 1;
         this.playersTurn = false;
         this.closedPile = randomInteger(0, 3);
         updateInventoryPlayability();
@@ -371,6 +376,7 @@ export class Game {
             cardActions.danger(game);
         }
         this.checkForWinCondition(true);
+        game.player.doublesCardAvailable = randomInteger(1, 36) === 1;
     }
     opponentDiscard(card: Card) {
         const notOverloaded = card.playablePiles(true).filter(pile => (pile === -1 ? game.minipile : game.discarded[pile]).at(-2)?.modifier?.actionId !== "overload")
@@ -425,10 +431,11 @@ export class Game {
     }
     opponentPickup(involveMinipile?: boolean): Promise<Card> {
         const card = game.isMinipileActive && involveMinipile ? game.minipile.at(-1)! : game.pickupCard;
-        card.wrapper.style.position = "fixed";
         card.wrapper.style.left = card.wrapper.getBoundingClientRect().left + "px";
         card.wrapper.style.top = card.wrapper.getBoundingClientRect().top + "px";
         card.wrapper.style.transition = "left .5s, top .5s"
+        card.wrapper.style.position = "fixed";
+        card.wrapper.style.zIndex = "5";
         card.tags.splice(card.tags.indexOf("pickup"), 1)
         if (!game.isMinipileActive || !involveMinipile) {
             for (const secondCard of document.querySelectorAll(".pickupPile > .cardWrapper")) {
@@ -441,6 +448,7 @@ export class Game {
             game.pickupQueue.push(new Card(true));
             document.getElementsByClassName("pickupQueue")[0].appendChild(game.pickupQueue.at(-1)!.wrapper);
             document.getElementsByClassName("pickupPile")[0].appendChild(game.pickupCard.wrapper)
+            document.getElementsByClassName("pickupPile")[0].classList.add("animate");
         }
         game.dealer.health--;
         game.dealer.updateHealthCount();
@@ -452,8 +460,20 @@ export class Game {
                 card.wrapper.style.top = opponentHand.getBoundingClientRect().top + "px";
                 setTimeout(async () => {
                     card.wrapper.style.position = "";
+                    card.wrapper.style.zIndex = "";
                     opponentHand.appendChild(card.wrapper);
                     game.dealer.cards.push(card);
+                    if (card.modifier?.actionId === "transfer") {
+                        for (const secondCard of game.player.cards) {
+                            if (secondCard.number === card.number) {
+                                game.player.cards.push(secondCard);
+                                game.dealer.cards.splice(game.dealer.cards.indexOf(secondCard));
+                                document.getElementsByClassName("cardRack")[0].appendChild(secondCard.wrapper);
+                                console.info("trasfer")
+                                game.updateHands();
+                            }
+                        }
+                    }
                     if (game.isMinipileActive && involveMinipile) {
                         for (const secondCard of game.minipile) {
                             if (card === secondCard) continue;
@@ -467,7 +487,18 @@ export class Game {
                             for (let i = 0; i < 3; i++) {
                                 const secondCard = new Card(true);
                                 game.dealer.cards.push(secondCard);
-                                document.getElementsByClassName("cardRack")[0].appendChild(secondCard.wrapper);
+                                document.getElementsByClassName("opponentHand")[0].appendChild(secondCard.wrapper);
+                                if (secondCard.modifier?.actionId === "transfer") {
+                                    for (const card of game.dealer.cards) {
+                                        if (card.number === secondCard.number) {
+                                            game.player.cards.push(card);
+                                            game.dealer.cards.splice(game.dealer.cards.indexOf(card));
+                                            document.getElementsByClassName("cardRack")[0].appendChild(card.wrapper);
+                                            console.info("trasfer")
+                                            game.updateHands();
+                                        }
+                                    }
+                                }
                             }
                         }
                         game.forcedColor = "";
@@ -478,6 +509,17 @@ export class Game {
                                 const secondCard = new Card(true);
                                 game.dealer.cards.push(secondCard);
                                 opponentHand.appendChild(secondCard.wrapper);
+                                if (secondCard.modifier?.actionId === "transfer") {
+                                    for (const card of game.dealer.cards) {
+                                        if (card.number === secondCard.number) {
+                                            game.player.cards.push(card);
+                                            game.dealer.cards.splice(game.dealer.cards.indexOf(card));
+                                            document.getElementsByClassName("cardRack")[0].appendChild(card.wrapper);
+                                            console.info("trasfer")
+                                            game.updateHands();
+                                        }
+                                    }
+                                }
                             }
                         }
                         game.minipileAction = "";
@@ -853,6 +895,22 @@ export class Game {
                 piles.push(...game.selectedCards.filter(card => card !== getDraggedCard()).map(card => card.playablePiles()).flat())
             }
         }
+        if (game.selectedCards.length > 0) {
+            const sorted = game.selectedCards.sort((a, b) => a.number.value! - b.number.value!);
+            console.log(sorted);
+            let last = null;
+            let isValid = true;
+            for (const card of sorted) {
+                if (last === null) {
+                    last = card;
+                    continue;
+                }
+                if (card.number.value !== last.number.value! + 1 && last.number.actionId !== "#") isValid = false;
+                last = card;
+            }
+            console.log("isValid: " + isValid)
+            if (isValid) piles.push(...sorted[0].playablePiles())
+        }
         // Handle discard 2 of color
         if (game.selectedCards[0]?.number.actionId === "discard2Color") {
             if (game.selectedCards[1]?.color === game.selectedCards[0].color) {
@@ -977,7 +1035,7 @@ export const updateInventoryPlayability = () => {
     //let hasPlayable = false;
     for (const card of game.player.cards) {
         card.updateAbilityWild(false);
-        if (card.isPlayable()) {
+        if (card.isPlayable() || card.number.actionId === "tower") {
             //hasPlayable = true;
             card.element.classList.remove("unplayable")
         } else {

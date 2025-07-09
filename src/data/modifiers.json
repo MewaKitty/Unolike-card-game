@@ -1,20 +1,17 @@
 [
     {
         "name": "Add 2 pressure",
-        "actionId": "x2",
-        "modifies": 2
+        "actionId": "x2"
     },
     {
         "name": "Draw 1 card",
         "draw": 1,
-        "modifies": 1,
         "weight": 2
     },
     {
         "name": "Random occurance",
         "actionId": "randomOccurance",
-        "weight": 5,
-        "modifies": [1,2,3,4,5]
+        "weight": 5
     },
     {
         "name": "Landmine",
@@ -31,16 +28,21 @@
     {
         "name": "Draw 3 cards",
         "draw": 3,
-        "modifies": 3,
         "weight": 1
     },
     {
         "name": "Swap hands",
-        "actionId": "swap"
+        "actionId": "swap",
+        "weight": 0.2
     },
     {
         "name": "Resolve a danger card",
-        "actionId": "danger",
-        "weight": 99
+        "actionId": "danger"
+    },
+    {
+        "name": "On draw, give all of this number to opponent.",
+        "actionId": "transfer",
+        "weight": 99,
+        "modifies": ["number"]
     }
 ]
