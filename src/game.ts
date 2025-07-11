@@ -4,6 +4,7 @@ import { random, randomInteger } from "./utils.ts";
 import { getDraggedCard } from "./dragging.ts";
 import numberData from "./data/numbers.json";
 import colorData from "./data/colors.json";
+import symbolData from "./data/symbols.json";
 import cardActions from "./cardActions.ts";
 
 export const discardedCards: Card[] = []
@@ -37,6 +38,8 @@ class Player {
     recentCards: {card: Card, pile: number}[];
     cards: Card[];
     doublesCardAvailable: boolean;
+    isChoosingDrawRemoval: boolean;
+    drawRemovalCards: Card[];
     constructor (isOpponent: boolean) {
         this.isOpponent = isOpponent;
         this.ability = null;
@@ -45,6 +48,8 @@ class Player {
         this.recentCards = [];
         this.cards = [];
         this.doublesCardAvailable = randomInteger(1, 36) === 1;
+        this.isChoosingDrawRemoval = false;
+        this.drawRemovalCards = [];
     }
     /*
     get cards () {
@@ -90,6 +95,65 @@ class Player {
             document.getElementsByClassName("playerHealthCount")[0].textContent = "Health: " + this.health;
             (document.querySelector(".playerHealthBar .healthBarContent") as HTMLDivElement).style.width = (this.health / 48) * 100 + "%";
         }
+    }
+    getCardCount () {
+        let count = 0;
+        for (const card of this.cards) {
+            if (card.number.actionId !== "tower") count++;
+        }
+        return count;
+    }
+    hasTower (name: string) {
+        for (const card of this.cards) {
+            if (card.number.actionId === "tower" && card.color.name === name) return true;
+        }
+        return false;
+    }
+    addTower (tower: CardColor) {
+        for (const card of game.player.cards) {
+            if (card.color === tower && card.number.actionId === "tower") {
+                card.wrapper.remove();
+                game.player.cards.splice(game.player.cards.indexOf(card), 1);
+            }
+        }
+        for (const card of game.dealer.cards) {
+            if (card.color === tower && card.number.actionId === "tower") {
+                card.wrapper.remove();
+                game.dealer.cards.splice(game.dealer.cards.indexOf(card), 1);
+            }
+        }
+        const card = new Card();
+        card.color = tower;
+        card.number = symbolData.find(symbol => symbol.actionId === "tower")!;
+        card.modifier = null;
+        card.updateElement();
+        if (this.isOpponent) {
+            document.getElementsByClassName("opponentHand")[0].appendChild(card.wrapper);
+            game.dealer.cards.push(card);
+        } else {
+            game.addToRack(card);
+        }
+        const towers = [];
+        for (const card of this.cards) {
+            if (card.number.actionId === "tower") towers.push(card);
+        }
+        if (towers.length === 4) {
+            for (const card of this.cards) {
+                if (card.number.actionId === "tower") this.cards.splice(this.cards.indexOf(card), 1);
+            }
+            while (this.getCardCount() > 1) {
+                this.cards.shift();
+            }
+        }
+    }
+    addCard (card: Card) {
+        if (this.isOpponent) {
+            document.getElementsByClassName("opponentHand")[0].appendChild(card.wrapper);
+            game.dealer.cards.push(card);
+        } else {
+            game.addToRack(card);
+        }
+        updateInventoryPlayability();
     }
 }
 
@@ -142,6 +206,7 @@ export class Game {
     forcedColor: string;
     pickupQueue: Card[];
     cardLoanRemaining: number;
+    towerChooserAction: string;
     constructor() {
         /*
         this.player.cards = [];
@@ -193,7 +258,8 @@ export class Game {
         for (let i = 0; i < 4; i++) {
             this.pickupQueue.push(new Card(true));
         }
-        this.cardLoanRemaining = 4;
+        this.cardLoanRemaining = 0;
+        this.towerChooserAction = "";
     }
     getPlayer (index: number) {
         if (index === 0) return this.player;
@@ -203,6 +269,7 @@ export class Game {
         game.drawAmount += amount;
         game.drawPile = pile;
         document.getElementsByClassName("drawAmountText")[0].textContent = "+" + game.drawAmount;
+        updateInventoryPlayability();
     }
     updateInventoryPlayability () {
         updateInventoryPlayability();
@@ -304,7 +371,7 @@ export class Game {
             //this.endOpponentTurn();
             return;
         }
-        for (const card of this.dealer.cards.filter(card => game.dealer.cards.length <= game.player.cards.length ? card.number.actionId !== "swap" && card.modifier?.actionId !== "swap" : true)) {
+        for (const card of this.dealer.cards.filter(card => game.dealer.getCardCount() <= game.player.getCardCount() ? card.number.actionId !== "swap" && card.modifier?.actionId !== "swap" : true)) {
             console.log("playable", card.playablePiles())
             if (card.playablePiles(true).length > 0) {
                 await this.opponentDiscard(card);
@@ -334,9 +401,30 @@ export class Game {
             document.getElementsByClassName("cardRack")[0].appendChild(placeholderDiv)
             setTimeout(() => placeholderDiv.remove(), 200)
             await game.animateElementMovement(game.pickupCard.element, placeholderDiv, game.pickupCard.wrapper)
+            if (game.drawAmount > 1) {
+                game.player.isChoosingDrawRemoval = true;
+                game.player.drawRemovalCards.length = 0;
+                game.player.drawRemovalCards.push(game.pickupCard);
+            }
             game.addToRack(game.pickupCard)
             for (let i = 0; i < game.drawAmount - 1 + (game.dangerCard?.attack === "plusOneExtra" ? 1 : 0); i++) {
-                game.addToRack(new Card())
+                const newCard = new Card();
+                if (newCard.number.actionId === "draw3More") game.drawAmount += 3;
+                if (!game.player.hasTower("Green")) game.player.health--;
+                game.player.updateHealthCount();
+                game.addToRack(newCard)
+                game.player.drawRemovalCards.push(newCard);
+                if (newCard.modifier?.actionId === "transfer") {
+                    for (const card of game.player.cards) {
+                        if (card.number === newCard.number) {
+                            game.dealer.cards.push(card);
+                            game.player.cards.splice(game.player.cards.indexOf(card));
+                            document.getElementsByClassName("opponentHand")[0].appendChild(card.wrapper);
+                            console.info("trasfer")
+                            game.updateHands();
+                        }
+                    }
+                }
             }
             game.drawAmount = 0;
             game.drawPile = -1;
@@ -394,12 +482,12 @@ export class Game {
         placeholderDiv.style.transition = "width .5s";
         card.wrapper.parentElement?.insertBefore(placeholderDiv, card.wrapper);
         card.updateElement();
-        if (card.number.draw) {
+        if (card.number.draw && !game.player.hasTower("Red")) {
             game.drawAmount += card.number.draw;
             game.drawPile = pile;
             document.getElementsByClassName("drawAmountText")[0].textContent = "+" + game.drawAmount;
         }
-        if (card.modifier?.draw) {
+        if (card.modifier?.draw && !game.player.hasTower("Red")) {
             game.drawAmount += card.modifier?.draw;
             game.drawPile = pile;
             document.getElementsByClassName("drawAmountText")[0].textContent = "+" + game.drawAmount;
@@ -450,7 +538,7 @@ export class Game {
             document.getElementsByClassName("pickupPile")[0].appendChild(game.pickupCard.wrapper)
             document.getElementsByClassName("pickupPile")[0].classList.add("animate");
         }
-        game.dealer.health--;
+        if (!game.dealer.hasTower("Green")) game.dealer.health--;
         game.dealer.updateHealthCount();
         updateInventoryPlayability();
         return new Promise(res => {
@@ -464,7 +552,7 @@ export class Game {
                     opponentHand.appendChild(card.wrapper);
                     game.dealer.cards.push(card);
                     if (card.modifier?.actionId === "transfer") {
-                        for (const secondCard of game.player.cards) {
+                        for (const secondCard of game.dealer.cards) {
                             if (secondCard.number === card.number) {
                                 game.player.cards.push(secondCard);
                                 game.dealer.cards.splice(game.dealer.cards.indexOf(secondCard));
@@ -578,19 +666,29 @@ export class Game {
         if (game.lockedPiles.includes(pile) && card.modifier?.actionId !== "lock") game.lockedPiles.splice(game.lockedPiles.indexOf(pile), 1);
         updateInventoryPlayability();
         game.updateCardDiscard();
-        if (game.player.cards.length === 0 || game.dealer.cards.length === 0) return;
-        if (card.number.draw) {
+        if (game.player.getCardCount() === 0 || game.dealer.getCardCount() === 0) return;
+        if (card.number.draw && !game.dealer.hasTower("Red")) {
             game.drawAmount += card.number.draw;
             game.drawPile = pile;
             document.getElementsByClassName("drawAmountText")[0].textContent = "+" + game.drawAmount;
         }
-        if (card.modifier?.draw) {
+        if (card.modifier?.draw && !game.dealer.hasTower("Red")) {
             game.drawAmount += card.modifier?.draw;
             game.drawPile = pile;
             document.getElementsByClassName("drawAmountText")[0].textContent = "+" + game.drawAmount;
         }
         game.player.recentCards.push({ card, pile });
         if (game.player.recentCards.length > 11) game.player.recentCards.shift();
+        if (game.player.isChoosingDrawRemoval) {
+            game.player.isChoosingDrawRemoval = false;
+            game.player.drawRemovalCards.length = 0;
+            updateInventoryPlayability();
+            if (randomInteger(1, 20) === 1) {
+                for (let i = 0; i < 10; i++) {
+                    await game.player.pickup();
+                }
+            }
+        }
         return await this.applyPlayerDiscardEffects(card, pile);
     }
     async applyPlayerDiscardEffects(card: Card, pile: number) {
@@ -729,7 +827,7 @@ export class Game {
         console.log("opponentDiscard", card);
         if (pile === -1 && game.minipileAction === "war") return;
         if (pile === -1 && game.minipileAction === "war+2") return;
-        if (game.player.cards.length === 0 || game.dealer.cards.length === 0) return;
+        if (game.player.getCardCount() === 0 || game.dealer.getCardCount() === 0) return;
         this.actor = this.getPlayer(PlayerIndex.Opponent)!;
         this.target = this.getPlayer(PlayerIndex.Player)!;
         this.currentPile = pile;
@@ -797,6 +895,7 @@ export class Game {
             game.drawPile = pile;
             document.getElementsByClassName("drawAmountText")[0].textContent = "+" + game.drawAmount;
         }
+        updateInventoryPlayability();
         if (card.number.actionId === "reobtain") {
             let count = 0;
             let cards = [];
@@ -847,12 +946,14 @@ export class Game {
         setTimeout(() => placeholderDiv.remove(), 200)
         await game.animateElementMovement(game.pickupCard.element, placeholderDiv, game.pickupCard.wrapper)
         const pickupCard = game.pickupCard;
+        game.player.drawRemovalCards.push(pickupCard);
+        if (game.player.drawRemovalCards.length > 1) game.player.isChoosingDrawRemoval = true;
         game.addToRack(game.pickupCard)
         document.getElementsByClassName("cardRack")[0].scrollTo({
             left: document.getElementsByClassName("cardRack")[0].scrollWidth,
             behavior: "smooth"
         });
-        game.player.health--;
+        if (!game.player.hasTower("Green")) game.player.health--;
         game.player.updateHealthCount();
         return pickupCard;
     }
@@ -875,7 +976,7 @@ export class Game {
                 if (game.selectedCards[1].number.actionId === "#" && numberData.map(number => number.value).includes(discard.at(-1)?.number.value! - game.selectedCards[0].number.value!)) piles.push(index);
             }
         }
-        if (game.selectedCards.length === 2 && game.player.cards.length >= 3) {
+        if (game.selectedCards.length === 2 && game.player.getCardCount() >= 3) {
             let match = [];
             for (let index = -1; index < game.discarded.length; index++) {
                 if (game.isMinipileActive && index >= 0) continue;
@@ -920,6 +1021,18 @@ export class Game {
 
         return piles;
     }
+    loseScreen () {
+        game.hasEnded = true;
+        const resultScreen = document.getElementsByClassName("resultScreen")[0] as HTMLElement;
+        resultScreen.textContent = "You lost!"
+        resultScreen.hidden = false;
+    }
+    winScreen () {
+        game.hasEnded = true;
+        const resultScreen = document.getElementsByClassName("resultScreen")[0] as HTMLElement;
+        resultScreen.textContent = "You won!"
+        resultScreen.hidden = false;
+    }
     checkForWinCondition(isOpponentTurn: boolean) {
         if (game.hasEnded) return;
         let lastColor = null;
@@ -938,18 +1051,13 @@ export class Game {
             }
         }
         if (isWinning) {
-            game.hasEnded = true;
             if (isOpponentTurn) {
-                const resultScreen = document.getElementsByClassName("resultScreen")[0] as HTMLElement;
-                resultScreen.textContent = "You lost!"
-                resultScreen.hidden = false;
+                this.loseScreen();
             } else {
-                const resultScreen = document.getElementsByClassName("resultScreen")[0] as HTMLElement;
-                resultScreen.textContent = "You won!"
-                resultScreen.hidden = false;
+                this.winScreen();
             }
         }
-        if (game.dealer.cards.length > 25 || game.dealer.health <= 0) {
+        if ((game.dealer.getCardCount() > 25 && !game.dealer.hasTower("Yellow")) || game.dealer.health <= 0) {
             game.dealer.lives -= 1;
             game.dealer.cards.length = 0;
             game.dealer.health = 48;
@@ -960,7 +1068,7 @@ export class Game {
             game.updateHands();
             document.getElementsByClassName("opponentLiveCounter")[0].textContent = "Lives: " + this.dealer.lives;
         }
-        if (game.player.cards.length > 25 || game.player.health <= 0) {
+        if ((game.player.getCardCount() > 25 && !game.player.hasTower("Yellow")) || game.player.health <= 0) {
             game.player.lives -= 1;
             game.player.cards.length = 0;
             game.player.health = 48;
@@ -971,17 +1079,11 @@ export class Game {
             game.updateHands();
             document.getElementsByClassName("playerLiveCounter")[0].textContent = "Lives: " + this.player.lives;
         }
-        if (game.player.cards.length === 0 || game.dealer.lives === 0) {
-            game.hasEnded = true;
-            const resultScreen = document.getElementsByClassName("resultScreen")[0] as HTMLElement;
-            resultScreen.textContent = "You won!"
-            resultScreen.hidden = false;
+        if (game.player.getCardCount() === 0 || game.dealer.lives === 0) {
+            this.winScreen();
         }
-        if (game.dealer.cards.length === 0 || game.player.lives === 0) {
-            game.hasEnded = true;
-            const resultScreen = document.getElementsByClassName("resultScreen")[0] as HTMLElement;
-            resultScreen.textContent = "You lost!"
-            resultScreen.hidden = false;
+        if (game.dealer.getCardCount() === 0 || game.player.lives === 0) {
+            this.loseScreen();
         }
     }
     calculateScore() {
@@ -1033,17 +1135,24 @@ export const game = new Game();
 
 export const updateInventoryPlayability = () => {
     //let hasPlayable = false;
+    if (game.player.isChoosingDrawRemoval) {
+        document.getElementsByClassName("cardRack")[0]?.classList.add("isChoosingDrawRemoval");
+    } else {
+        document.getElementsByClassName("cardRack")[0]?.classList.remove("isChoosingDrawRemoval");
+    }
     for (const card of game.player.cards) {
         card.updateAbilityWild(false);
         if (card.isPlayable() || card.number.actionId === "tower") {
             //hasPlayable = true;
             card.element.classList.remove("unplayable")
+            if (!game.player.isChoosingDrawRemoval || game.player.drawRemovalCards.includes(card)) card.wrapper.classList.remove("cardWidthOut");
         } else {
-            card.element.classList.add("unplayable")
+            card.element.classList.add("unplayable");
+            if (game.player.isChoosingDrawRemoval && !game.player.drawRemovalCards.includes(card)) card.wrapper.classList.add("cardWidthOut");
         }
     }
-    if (document.getElementsByClassName("playerCardCount")[0]) document.getElementsByClassName("playerCardCount")[0].textContent = game.player.cards.length + "";
-    if (document.getElementsByClassName("opponentCardCount")[0]) document.getElementsByClassName("opponentCardCount")[0].textContent = game.dealer.cards.length + "";
+    if (document.getElementsByClassName("playerCardCount")[0]) document.getElementsByClassName("playerCardCount")[0].textContent = game.player.getCardCount() + "";
+    if (document.getElementsByClassName("opponentCardCount")[0]) document.getElementsByClassName("opponentCardCount")[0].textContent = game.dealer.getCardCount() + "";
     /*if (hasPlayable) {
         document.getElementsByClassName("pickupPile")[0]?.classList.add("unplayable")
     } else {

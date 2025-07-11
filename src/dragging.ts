@@ -123,7 +123,8 @@ export const setupDragging = () => {
                 if (destination === cardRack) {
                     if (!game.player.cards.includes(draggedCard)) {
                         if (draggedCard.number.actionId === "draw3More") game.drawAmount += 3;
-                        game.player.health--;
+                        if (!game.player.hasTower("Green")) game.player.health--;
+                        game.player.updateHealthCount();
                         document.getElementsByClassName("pickupPile")[0].classList.add("animate");
                         game.addToRack(draggedCard);
                         if (draggedCard.modifier?.actionId === "transfer") {
@@ -137,8 +138,14 @@ export const setupDragging = () => {
                                 }
                             }
                         }
+                        if (game.drawAmount > 1) {
+                            game.player.isChoosingDrawRemoval = true;
+                            game.player.drawRemovalCards.length = 0;
+                            game.player.drawRemovalCards.push(draggedCard);
+                        }
                         for (let i = 0; i < Math.min(game.drawAmount - 1, 30) + (game.dangerCard?.attack === "plusOneExtra" ? 1 : 0); i++) {
                             const newCard = new Card();
+                            game.player.drawRemovalCards.push(newCard);
                             if (newCard.number.actionId === "draw3More") game.drawAmount += 3;
                             game.player.health--;
                             document.getElementsByClassName("pickupPile")[0].classList.add("animate");

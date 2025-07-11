@@ -50,6 +50,9 @@ body, html {
   .towerCard.towerCard {
     border: 2px solid var(--color);
   }
+  .isChoosingDrawRemoval.isChoosingDrawRemoval {
+    background-color: white;
+  }
 }
 
 #app {
@@ -63,7 +66,7 @@ body, html {
   left: 1rem;
   width: calc(100vw - 2rem);
   height: 12rem;
-  background: #eee;
+  background-color: #eee;
   padding: 1rem;
   border-radius: 1rem;
   border: 1px solid #333;
@@ -72,6 +75,7 @@ body, html {
   overflow-x: scroll;
   overflow-y: hidden;
   box-sizing: border-box;
+  transition: background-color 360ms;
 }
 
 .cardRack:has(.dragging) {
@@ -153,7 +157,7 @@ body, html {
 .dragging.card {
   position: fixed;
   cursor: grabbing;
-  z-index: 2;
+  z-index: 9;
   touch-action: none;
 }
 
@@ -253,6 +257,7 @@ div.selectedCard {
   display: flex;
   gap: 1rem;
   transition: left .5s;
+  z-index: 6;
 }
 
 .minipileExit {
@@ -300,10 +305,13 @@ div.selectedCard {
   gap: 1rem;
   font-weight: 500;
   transition: right .5s;
-  z-index: 2;
+  z-index: 6;
 }
 .towerChooser {
   background: #030300dd;
+}
+.towerChooser[hidden] {
+  display: none;
 }
 
 .colorChooserInner {
@@ -339,6 +347,7 @@ div.selectedCard {
   display: flex;
   gap: 1rem;
   transition: right 160ms;
+  z-index: 6;
 }
 
 .reflectDisplay {
@@ -369,13 +378,14 @@ div.selectedCard {
 }
 .useReflectBox button {
   background-color: #ffaaff;
-  border: 2px solid black;
+  border: 2px solid #aa33aa;
   text-align: center;
-  font-size: 1rem;
+  font-size: 1.2rem;
   border-radius: .5rem;
-  padding: .2rem;
+  padding: .5rem .2rem;
   cursor: pointer;
   transition: background-color .2s;
+  color: black;
 }
 .useReflectBox button:hover {
   background-color: #ee77ee;
@@ -455,7 +465,7 @@ div.selectedCard {
 
 .lotteryResult {
   position: absolute;
-  z-index: 2;
+  z-index: 9;
   left: 50vw;
   transform: translateX(-50%);
   top: 20vh;
@@ -519,12 +529,13 @@ div.selectedCard {
   bottom: 13rem;
   right: 0;
   padding: 1rem;
-  background: #333300;
+  background: #333300ca;
   display: flex;
   gap: 1rem;
   width: fit-content;
   border-top-left-radius: 1rem;
   border-bottom-left-radius: 1rem;
+  z-index: 6;
 }
 
 .reobtainRack[hidden] {
@@ -557,8 +568,11 @@ div.selectedCard {
 
 .cardEntry button {
   background: #ffffbb;
-  border: 1px solid black;
+  border: 2px solid #aaaa66;
   border-radius: .3rem;
+  padding: .7rem .3rem;
+  font-size: .7rem;
+  color: black;
 }
 
 .playerLiveCounter {
@@ -1119,4 +1133,56 @@ div.selectedCard {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
+}
+
+@keyframes towerIn {
+  from {
+    right: -13rem;
+  }
+  to {
+    right: 0;
+  }
+}
+
+@keyframes towerOut {
+  from {
+    right: 0;
+  }
+  to {
+    right: -13rem;
+  }
+}
+
+.cardWidthOut.cardWidthOut {
+  /*animation: cardWidthOut 1s;*/
+  width: 0rem;
+  min-width: 0rem;
+  opacity: 0;
+  margin-right: -0.5rem;
+}
+.cardWidthOut .card {
+  /*animation: cardWidthOut 1s;*/
+  width: 0rem;
+  max-width: 0rem;
+  min-width: 0rem;
+  padding: 0;
+}
+/*
+@keyframes cardWidthOut {
+  from {
+    width: 7rem;
+    max-width: 7rem;
+    min-width: 7rem;
+    opacity: 1;
+  }
+  to {
+    width: 0rem;
+    max-width: 0rem;
+    min-width: 0rem;
+    opacity: 0;
+  }
+}*/
+
+.isChoosingDrawRemoval {
+  background-color: black;
 }

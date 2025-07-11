@@ -9,7 +9,7 @@
   cursor: pointer;
   box-sizing: border-box;
   --translateY: 0;
-  transition: left 80ms, top 80ms, opacity 160ms;
+  transition: left 80ms, top 80ms, opacity 160ms, width 320ms, max-width 320ms, min-width 320ms, margin-right 320ms;
   background: white;
   box-sizing: border-box;
   white-space: pre-line;
@@ -46,6 +46,7 @@
   min-width: 7rem;
   user-select: none;
   transition: outline 160ms;
+  transition: width 320ms, max-width 320ms, min-width 320ms, margin-right 320ms;
 }
 
 .cardDescriptionSpan, .cardModifierSpan {

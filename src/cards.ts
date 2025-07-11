@@ -11,7 +11,8 @@ export interface CardColor {
   color: string,
   text?: string,
   wild?: boolean,
-  dark?: string
+  dark?: string,
+  description?: string
 }
 
 interface CardNumber {
@@ -134,10 +135,10 @@ export class Card {
     const cardNameSpan = document.createElement("span");
     cardNameSpan.textContent = this.number.name;
     innerElement.appendChild(cardNameSpan);
-    if (this.number.description) {
+    if (this.number.description || this.color.description) {
       const cardDescriptionSpan = document.createElement("span");
       cardDescriptionSpan.classList.add("cardDescriptionSpan");
-      cardDescriptionSpan.textContent = this.number.description;
+      cardDescriptionSpan.textContent = this.number.actionId === "tower" && this.color.description ? this.color.description : this.number.description!;
       innerElement.appendChild(cardDescriptionSpan);
     }
     if (this.modifier) {
@@ -146,8 +147,10 @@ export class Card {
       cardModifierSpan.textContent = "+ " + this.modifier.name;
       innerElement.appendChild(cardModifierSpan);
     }
+    if (!this.hidden) innerElement.style = "";
     if (this.number.actionId === "tower") return;
     if (this.hidden) element.style = `--color: #fff; --dark: #fff; color: black;`;
+    if (this.hidden) innerElement.style = "color: black;";
     if (this.hidden) innerElement.textContent = `Card`;
   }
   updateAbilityWild (isOpponent: boolean) {
@@ -173,6 +176,7 @@ export class Card {
     return false;
   }
   playablePiles (forOpponent?: boolean): number[] {
+    if (game.player.isChoosingDrawRemoval) return game.player.drawRemovalCards.includes(this) ? [-1, 0, 1, 2, 3] : [];
     if (game.dangerCard?.attack === "onlyAllowsNumbers" && (this.number.value === undefined || this.number.value === null)) return [];
     if (game.onePileLockType === "+2IfColorMatch") {
       if (!this.color.wild) return [game.onePileLockNumber];
@@ -234,6 +238,10 @@ export class Card {
 
     if (game.selectedCards.includes(this)) return true;
 
+    console.log("game", game);
+
+    if (game.player.isChoosingDrawRemoval) return game.player.drawRemovalCards.includes(this);
+    
     if (game.selectedCards.length === 0) {
       if (this.playablePiles().length > 0) return true;
     }

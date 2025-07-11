@@ -2,17 +2,20 @@
     {
         "name": "Red",
         "color": "#ff9f9f",
-        "dark": "#9f0000"
+        "dark": "#9f0000",
+        "description": "Prevents plus cards from adding to the draw amount"
     },
     {
         "name": "Green",
         "color": "#aaffaa",
-        "dark": "#009900"
+        "dark": "#009900",
+        "description": "Drawing cards no longer decreases health"
     },
     {
         "name": "Yellow",
         "color": "#ffffaa",
-        "dark": "#999900"
+        "dark": "#999900",
+        "description": "Having more than 25 cards don't affect you"
     },
     {
         "name": "Blue",

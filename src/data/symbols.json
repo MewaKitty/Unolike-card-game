@@ -35,7 +35,8 @@
         "name": "+4",
         "draw": 4,
         "wild": true,
-        "description": "Can defend against other plus cards"
+        "description": "Can defend against other plus cards",
+        "weight": 99
     },
     {
         "name": "+5",
@@ -71,8 +72,7 @@
         "name": "+10",
         "draw": 10,
         "wild": true,
-        "description": "Better than a +5!",
-        "weight": 99
+        "description": "Better than a +5!"
     },
     {
         "name": "Blank",
@@ -225,12 +225,12 @@
         "wild": true
     },
     {
-        "name": "Blue random occurances",
+        "name": "Box o' water",
         "actionId": "blueRandom",
         "description": "This is... the same thing???"
     },
     {
-        "name": "Blue random occurances",
+        "name": "Box o' water",
         "actionId": "blueRandom",
         "description": "This is... the same thing???",
         "wild": true
@@ -238,6 +238,7 @@
     {
         "name": "Reobtain a discarded card",
         "actionId": "reobtain",
+        "description": "Discard or add to inventory!",
         "wild": true
     },
     {
@@ -358,8 +359,7 @@
     {
         "name": "Reveal next 5 pickup cards",
         "color": "Blue",
-        "actionId": "revealNext5",
-        "weight": 99
+        "actionId": "revealNext5"
     },
     {
         "name": "Card removal chance",
@@ -375,8 +375,7 @@
         "name": "Card loan",
         "description": "Running out? Gain and play 4 cards in a row!",
         "actionId": "4CardLoan",
-        "wild": true,
-        "weight": 99
+        "wild": true
     },
     {
         "name": "Doubles",
@@ -387,5 +386,19 @@
         "name": "Tower",
         "actionId": "tower",
         "unlisted": true
+    },
+    {
+        "name": "Obtain a tower",
+        "actionId": "obtainTower",
+        "wild": true
+    },
+    {
+        "name": "Obtain 2 towers",
+        "actionId": "obtain2Towers"
+    },
+    {
+        "name": "Box o' oranges",
+        "actionId": "orangeRandom",
+        "description": "Who wants random occurances?! Anyone?"
     }
 ]

@@ -4,7 +4,6 @@ import { Card } from "./cards.ts";
 import colorData from "./data/colors.json";
 import towerData from "./data/towers.json";
 import abilityData from "./data/abilities.json";
-import symbolData from "./data/symbols.json";
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 
@@ -72,7 +71,8 @@ pickupPile.addEventListener("pointerup", async () => {
     document.getElementsByClassName("pickupPile")[0].classList.add("animate");
     placeholderDiv.remove()
     if (game.pickupCard.number.actionId === "draw3More") game.drawAmount += 3;
-    game.player.health--;
+    if (!game.player.hasTower("Green")) game.player.health--;
+    game.player.updateHealthCount();
     const targetCard = game.pickupCard;
     game.addToRack(game.pickupCard)
     if (targetCard.modifier?.actionId === "transfer") {
@@ -87,11 +87,18 @@ pickupPile.addEventListener("pointerup", async () => {
         }
     }
     console.debug("draw", game.drawAmount)
+    if (game.drawAmount > 1) {
+        game.player.isChoosingDrawRemoval = true;
+        game.player.drawRemovalCards.length = 0;
+        game.player.drawRemovalCards.push(targetCard);
+    }
     for (let i = 0; i < Math.min(game.drawAmount - 1, 30) + (game.dangerCard?.attack === "plusOneExtra" ? 1 : 0); i++) {
         const newCard = new Card();
         if (newCard.number.actionId === "draw3More") game.drawAmount += 3;
-        game.player.health--;
+        if (!game.player.hasTower("Green")) game.player.health--;
+        game.player.updateHealthCount();
         game.addToRack(newCard)
+        game.player.drawRemovalCards.push(newCard);
         if (newCard.modifier?.actionId === "transfer") {
             for (const card of game.player.cards) {
                 if (card.number === newCard.number) {
@@ -112,6 +119,7 @@ pickupPile.addEventListener("pointerup", async () => {
     game.drawAmount = 0;
     document.getElementsByClassName("drawAmountText")[0].textContent = "";
     game.player.updateHealthCount();
+    game.updateInventoryPlayability();
     //game.opponentTurn();
 })
 
@@ -503,27 +511,19 @@ for (const tower of towerData) {
     towerEntry.style.background = tower.color;
     towerChooserInner.appendChild(towerEntry);
     towerEntry.addEventListener("click", () => {
-        for (const card of game.player.cards) {
-            if (card.color === tower && card.number.actionId === "tower") {
-                card.wrapper.remove();
-                game.player.cards.splice(game.player.cards.indexOf(card), 1);
-            }
+        game.actor.addTower(tower);
+        if (game.towerChooserAction === "obtain2Towers") {
+            game.towerChooserAction = "obtainTower";
+        } else if (game.towerChooserAction === "obtainTower") {
+            document.querySelector<HTMLDivElement>(".towerChooser")!.style.animation = "towerOut .3s";
         }
-        for (const card of game.dealer.cards) {
-            if (card.color === tower && card.number.actionId === "tower") {
-                card.wrapper.remove();
-                game.dealer.cards.splice(game.dealer.cards.indexOf(card), 1);
-            }
-        }
-        const card = new Card();
-        card.color = tower;
-        card.number = symbolData.find(symbol => symbol.actionId === "tower")!;
-        card.modifier = null;
-        card.updateElement();
-        game.addToRack(card);
     })
 }
+towerChooser.addEventListener("animationend", e => {
+    if (e.animationName === "towerOut") {
+        towerChooser.hidden = true;
+    }
+})
 towerChooser.appendChild(towerChooserInner)
-//towerChooser.hidden = true;
-//towerChooser.classList.add("colorChooserExit");
+towerChooser.hidden = true;
 app.appendChild(towerChooser);

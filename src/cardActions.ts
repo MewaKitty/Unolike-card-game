@@ -4,6 +4,7 @@ import { Card } from "./cards.ts";
 
 import colorData from "./data/colors.json";
 import symbolData from "./data/symbols.json";
+import towerData from "./data/towers.json";
 
 type CardActionFunction = (game: Game) => void | boolean | Promise<void> | Promise<boolean> | Promise<void | boolean>;
 
@@ -143,7 +144,7 @@ export default {
                 (document.getElementsByClassName("minipileOuter")[0] as HTMLElement).hidden = false;
                 document.getElementsByClassName("minipileOuter")[0].classList.remove("minipileExit");
                 minipileCard.element.classList.remove("unplayable")
-                document.getElementsByClassName("minipileOuter")[0].classList.remove("unplayable");
+                document.getElementsByClassName("minipileInner")[0].classList.remove("unplayable");
                 game.updateCardDiscard();
                 game.updateInventoryPlayability();
         }
@@ -197,7 +198,7 @@ export default {
         (document.getElementsByClassName("minipileOuter")[0] as HTMLElement).hidden = false;
         document.getElementsByClassName("minipileOuter")[0].classList.remove("minipileExit");
         minipileCard.element.classList.remove("unplayable")
-        document.getElementsByClassName("minipileOuter")[0].classList.remove("unplayable");
+        document.getElementsByClassName("minipileInner")[0].classList.remove("unplayable");
         game.updateCardDiscard();
         game.updateInventoryPlayability();
     },
@@ -262,7 +263,7 @@ export default {
         updateInventoryPlayability();
         return true;
     },
-    "lottery": async () => {
+    "lottery": async (game) => {
         const lotteryDarken = document.getElementsByClassName("lotteryDarken")[0] as HTMLDivElement;
         lotteryDarken.hidden = false;
         lotteryDarken.style.animation = "1s lotteryOpacityIn";
@@ -306,10 +307,18 @@ export default {
         lotteryDarken.style.animation = ".5s lotteryOpacityOut";
         resultDiv.style.animation = ".5s lotteryOpacityOut";
         (document.getElementsByClassName("lotteryRow")[0] as HTMLElement).style.animation = ".5s lotteryOpacityOut";
+        if (isWinning) {
+            if (game.actor.isOpponent) {
+                game.loseScreen();
+            } else {
+                game.winScreen();
+            }
+        }
     },
     "blueRandom": async (game) => {
         switch (randomInteger(1, 6)) {
             case 1:
+                document.getElementsByClassName("randomOccuranceLabel" + game.currentPile)[0].textContent = "Drawing until blue, 2, 0, wild, or whatever"
                 game.playersTurn = false;
                 for (let i = 0; i < 25; i++) {
                     const newCard = await game.target.pickup();
@@ -317,6 +326,7 @@ export default {
                 }
                 break;
             case 2:
+                document.getElementsByClassName("randomOccuranceLabel" + game.currentPile)[0].textContent = "How about the opponent does it?"
                 if (game.actor.isOpponent) {
                     await game.applyPlayerDiscardEffects(game.currentCard!, game.currentPile);
                 } else {
@@ -324,16 +334,19 @@ export default {
                 }
                 break;
             case 3:
+                document.getElementsByClassName("randomOccuranceLabel" + game.currentPile)[0].textContent = "Time for you to draw 3!"
                 for (let i = 0; i < 3; i++) {
                     await game.target.pickup();
                 }
                 break;
             case 4:
+                document.getElementsByClassName("randomOccuranceLabel" + game.currentPile)[0].textContent = "I play +2!"
                 for (let i = 0; i < 2; i++) {
                     await game.target.pickup();
                 }
                 break;
             case 5:
+                document.getElementsByClassName("randomOccuranceLabel" + game.currentPile)[0].textContent = "First card gets sent away to opponent!"
                 const secondCard = game.actor.cards[0];
                 game.actor.cards.splice(game.actor.cards.indexOf(secondCard, 1));
                 game.target.cards.push(secondCard);
@@ -342,6 +355,7 @@ export default {
                 game.updateInventoryPlayability();
                 break;
             case 6:
+                document.getElementsByClassName("randomOccuranceLabel" + game.currentPile)[0].textContent = "Why send 2? Send 2!";
                 for (let i = 0; i < 2; i++) {
                     const thirdCard = game.actor.cards[0];
                     game.actor.cards.splice(game.actor.cards.indexOf(thirdCard, 1));
@@ -608,14 +622,14 @@ export default {
         document.getElementsByClassName("cardLotteryRow")[0].appendChild(lotteryDice);
 
         await wait(500);
-        const lotterDiceB = document.createElement("div");
-        lotterDiceB.classList.add("lotteryDice");
-        lotterDiceB.textContent = targetNumber + "";
-        lotterDiceB.style.animation = ".5s lotteryDice"
-        lotterDiceB.style.background = colorData.find(color => color.wild)!.color;
-        lotterDiceB.style.color = colorData.find(color => color.wild)!.text ?? "";
-        lotterDiceB.style.left = `calc(50vw - 8.5rem + ${2 * 6}rem)`
-        document.getElementsByClassName("cardLotteryRow")[0].appendChild(lotterDiceB)
+        const lotteryDiceB = document.createElement("div");
+        lotteryDiceB.classList.add("lotteryDice");
+        lotteryDiceB.textContent = targetNumber + "";
+        lotteryDiceB.style.animation = ".5s lotteryDice"
+        lotteryDiceB.style.background = colorData.find(color => color.wild)!.color;
+        lotteryDiceB.style.color = colorData.find(color => color.wild)!.text ?? "";
+        lotteryDiceB.style.left = `calc(50vw - 8.5rem + ${2 * 6}rem)`
+        document.getElementsByClassName("cardLotteryRow")[0].appendChild(lotteryDiceB)
         
         await wait(1000);
         const resultDiv = document.getElementsByClassName("lotteryResult")[0] as HTMLDivElement;
@@ -645,6 +659,111 @@ export default {
         } else {
             game.cardLoanRemaining = 4;
             document.getElementsByClassName("cardLoanRemaining")[0].textContent = "Remaining card payments: " + game.cardLoanRemaining;
+        }
+    },
+    "obtainTower": async (game) => {
+        if (game.actor.isOpponent) {
+            let chosenTower = null;
+            for (const tower of towerData) {
+                if (game.player.hasTower(tower.name)) chosenTower = tower;
+            };
+            if (!chosenTower) chosenTower = random(towerData);
+            game.actor.addTower(chosenTower);
+            return;
+        };
+        document.querySelector<HTMLDivElement>(".towerChooser")!.hidden = false;
+        document.querySelector<HTMLDivElement>(".towerChooser")!.style.animation = "towerIn .3s";
+        game.towerChooserAction = "obtainTower";
+    },
+    "obtain2Towers": async (game) => {
+        if (game.actor.isOpponent) {
+            for (let i = 0; i < 2; i++) {
+                if (game.actor.isOpponent) {
+                    let chosenTower = null;
+                    for (const tower of towerData) {
+                        if (game.player.hasTower(tower.name)) chosenTower = tower;
+                    };
+                    if (!chosenTower) chosenTower = random(towerData);
+                    
+                    game.actor.addTower(chosenTower);
+                };
+            }
+            return;
+        };
+        document.querySelector<HTMLDivElement>(".towerChooser")!.hidden = false;
+        document.querySelector<HTMLDivElement>(".towerChooser")!.style.animation = "towerIn .3s";
+        game.towerChooserAction = "obtain2Towers";
+    },
+    "gainRedTower": async (game) => {
+        game.actor.addTower(towerData.find(tower => tower.name === "Red")!)
+    },
+    "gainGreenTower": async (game) => {
+        game.actor.addTower(towerData.find(tower => tower.name === "Green")!)
+    },
+    "gainYellowTower": async (game) => {
+        game.actor.addTower(towerData.find(tower => tower.name === "Yellow")!)
+    },
+    "gainBlueTower": async (game) => {
+        game.actor.addTower(towerData.find(tower => tower.name === "Blue")!)
+    },
+    "orangeRandom": async (game) => {
+        switch (randomInteger(1, 6)) {
+            case 1:
+                document.getElementsByClassName("randomOccuranceLabel" + game.currentPile)[0].textContent = "Nothing??";
+                break;
+            case 2:
+                document.getElementsByClassName("randomOccuranceLabel" + game.currentPile)[0].textContent = "Drawing until 2, 5, 7, or whatever"
+                game.playersTurn = false;
+                for (let i = 0; i < 25; i++) {
+                    const newCard = await game.target.pickup();
+                    if (newCard.number.value === 2 || newCard.number.value === 5 || newCard.number.value === 7) break;
+                }
+                break;
+            case 3:
+                document.getElementsByClassName("randomOccuranceLabel" + game.currentPile)[0].textContent = "Drawing until green"
+                game.playersTurn = false;
+                for (let i = 0; i < 25; i++) {
+                    const newCard = await game.target.pickup();
+                    if (newCard.color.name === "Green") break;
+                }
+                break;
+            case 4:
+                let targetCard = null;
+                for (const card of game.target.cards) {
+                    if (card.color.wild) targetCard = card;
+                }
+                if (targetCard) {
+                    document.getElementsByClassName("randomOccuranceLabel" + game.currentPile)[0].textContent = "Yank the opponent's wild"
+                    game.target.cards.splice(game.target.cards.indexOf(targetCard));
+                    game.actor.addCard(targetCard);
+                } else {
+                    document.getElementsByClassName("randomOccuranceLabel" + game.currentPile)[0].textContent = "No wilds to yank?"
+                }
+                break;
+            case 5:
+                for (const color of colorData) {
+                    for (const card of game.actor.cards) {
+                        if (card.color.name === color.name) {
+                            game.actor.discardToBottom(card);
+                            break;
+                        }
+                    }
+                }
+                document.getElementsByClassName("randomOccuranceLabel" + game.currentPile)[0].textContent = "Discard 1 of color";
+                break;
+            case 6:
+                for (const card of game.actor.cards) {
+                    if (card.number.value === 1 || card.number.value === 3 || card.number.value === 6) game.actor.discardToBottom(card);
+                }
+                document.getElementsByClassName("randomOccuranceLabel" + game.currentPile)[0].textContent = "Discard 1s, 3s, and 6s";
+                break;
+            case 7:
+                const actorCards = game.actor.cards.length;
+                game.actor.cards.length = 0;
+                for (let i = 0; i < actorCards; i++) {
+                    await game.actor.pickup();
+                }
+                document.getElementsByClassName("randomOccuranceLabel" + game.currentPile)[0].textContent = "Replace all cards in hand";
         }
     }
 } satisfies Record<string, CardActionFunction> as Record<string, CardActionFunction>

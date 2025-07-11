@@ -42,7 +42,22 @@
     {
         "name": "On draw, give all of this number to opponent.",
         "actionId": "transfer",
-        "weight": 99,
         "modifies": ["number"]
+    },
+    {
+        "name": "Gain red tower",
+        "actionId": "gainRedTower"
+    },
+    {
+        "name": "Gain green tower",
+        "actionId": "gainGreenTower"
+    },
+    {
+        "name": "Gain yellow tower",
+        "actionId": "gainYellowTower"
+    },
+    {
+        "name": "Gain blue tower",
+        "actionId": "gainBlueTower"
     }
 ]
