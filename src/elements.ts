@@ -1,9 +1,10 @@
-import { game, updateInventoryPlayability } from "./game.ts";
+// import { game } from "./game.ts";
 import { setupDragging } from "./dragging.ts";
 import { Card } from "./cards.ts";
 import colorData from "./data/colors.json";
 import towerData from "./data/towers.json";
 import abilityData from "./data/abilities.json";
+import { client } from "./client.ts";
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 
@@ -13,17 +14,18 @@ for (let i = 0; i < 4; i++) {
     cardDiscard.classList.add("dragDestination");
     cardDiscard.classList.add("cardDiscard" + i)
     cardDiscard.dataset.index = i + "";
-    cardDiscard.appendChild(game.discarded[i][0].wrapper)
+    console.log(client)
+    cardDiscard.appendChild(client.discarded[i][0].wrapper)
     app.appendChild(cardDiscard);
-    if (i === game.closedPile) cardDiscard.classList.add("closed");
+    //if (i === game.closedPile) cardDiscard.classList.add("closed");
 }
 
 export const cardRack = document.createElement("div");
 cardRack.classList.add("cardRack");
 cardRack.classList.add("dragDestination");
-for (const card of game.player.cards) cardRack.appendChild(card.wrapper);
+for (const card of client.getSelfPlayer().cards) cardRack.appendChild(card.wrapper);
 
-updateInventoryPlayability();
+client.updateInventoryPlayability();
 
 app.appendChild(cardRack);
 
@@ -33,17 +35,17 @@ const pickupLabel = document.createElement("span");
 pickupLabel.classList.add("pickupLabel");
 pickupPile.appendChild(pickupLabel);
 pickupLabel.textContent = "Pick up here until you can discard a card";
-pickupPile.appendChild((game.pickupCard).wrapper)
+pickupPile.appendChild((client.pickupCard!).wrapper)
 app.appendChild(pickupPile);
 
-game.pickupCard.hidden = false;
-game.pickupCard.updateElement();
+client.pickupCard!.hidden = false;
+client.pickupCard!.updateElement();
 const pickupQueue = document.createElement("div");
 pickupQueue.classList.add("pickupQueue");
 for (let i = 0; i < 4; i++) {
-    game.pickupQueue[i].hidden = false;
-    game.pickupQueue[i].updateElement();
-    pickupQueue.appendChild(game.pickupQueue[i].wrapper);
+    client.pickupQueue[i].hidden = false;
+    client.pickupQueue[i].updateElement();
+    pickupQueue.appendChild(client.pickupQueue[i].wrapper);
 }
 pickupPile.appendChild(pickupQueue);
 
@@ -54,6 +56,13 @@ pickupPile.addEventListener("pointerdown", async () => {
 
 pickupPile.addEventListener("pointerup", async () => {
     if (Date.now() - pointerDownTime > 350) return;
+
+    client.sendPacket({
+        type: "pickup",
+        card: client.pickupCard!.id,
+        animate: true
+    })
+    /*
     if (!game.playersTurn) return;
     console.log(game.wasDragging)
     if (game.wasDragging) return;
@@ -120,12 +129,12 @@ pickupPile.addEventListener("pointerup", async () => {
     document.getElementsByClassName("drawAmountText")[0].textContent = "";
     game.player.updateHealthCount();
     game.updateInventoryPlayability();
-    //game.opponentTurn();
+    //game.opponentTurn();*/
 })
 
 const opponentHand = document.createElement("div");
 opponentHand.classList.add("opponentHand")
-for (const card of game.dealer.cards) {
+for (const card of client.getOpponent().cards) {
     opponentHand.appendChild(card.wrapper);
 }
 app.appendChild(opponentHand);
@@ -455,10 +464,15 @@ for (const ability of abilityData) {
     abilityCardInner.appendChild(cardDescriptionSpan);
     abilityCard.addEventListener("click", () => {
         abilityChooser.style.animation = ".6s abilityChooserOut"
-        game.player.ability = ability;
-        game.dealer.ability = abilityData.find(ability => ability !== game.player.ability)!;
-        console.log(game.player)
-        updateInventoryPlayability();
+        client.getSelfPlayer().ability = ability;
+        client.sendPacket({
+            type: "ability",
+            ability: ability
+        })
+        /*
+        game.dealer.ability = abilityData.find(ability => ability !== game.player.ability)!;*/
+        /*console.log(game.player)*/
+        client.updateInventoryPlayability();
     })
 }
 

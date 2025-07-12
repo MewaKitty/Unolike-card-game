@@ -1,7 +1,8 @@
-import { Card } from "./cards.ts";
-import { game, updateInventoryPlayability } from "./game.ts";
+//import { Card } from "./cards.ts";
+//import { game, updateInventoryPlayability } from "./game.ts";
+import { client, type ClientCard } from "./client.ts";
 
-let draggedCard: Card | null = null;
+let draggedCard: ClientCard | null = null;
 export let dragGap: { x: number, y: number } = { x: -1, y: -1 };
 export const dragGaps: {x: number, y: number}[] = [];
 export const setDraggedCard = (card: Card) => draggedCard = card;
@@ -22,13 +23,13 @@ export const setupDragging = () => {
         }
     }, false)
     addEventListener("pointerdown", () => {
-        game.wasDragging = false
+        client.wasDragging = false
     })
     addEventListener("pointermove", e => {
         if (!draggedCard) return;
         if (!draggedCard.element.classList.contains("dragging")) {
             draggedCard = null;
-            for (const card of game.selectedCards) {
+            for (const card of client.selectedCards) {
                 card.element.classList.remove("dragging");
                 card.element.style.left = "";
                 card.element.style.top = "";
@@ -37,8 +38,8 @@ export const setupDragging = () => {
         }
         draggedCard.element.style.left = e.pageX - dragGap.x + "px";
         draggedCard.element.style.top = e.pageY - dragGap.y + "px";
-        if (game.selectedCards.includes(draggedCard)) {
-            for (const [index, card] of game.selectedCards.entries()) {
+        if (client.selectedCards.includes(draggedCard)) {
+            for (const [index, card] of client.selectedCards.entries()) {
                 card.element.classList.add("dragging");
                 card.element.style.left = e.pageX - dragGap.x - 20 * index + "px";
                 card.element.style.top = e.pageY - dragGap.y - 20 * index + "px";
@@ -52,9 +53,9 @@ export const setupDragging = () => {
                 && e.pageX < destination.getBoundingClientRect().x + destination.getBoundingClientRect().width
                 && e.pageY < destination.getBoundingClientRect().y + destination.getBoundingClientRect().height) {
                 const pile = +(destination as HTMLDivElement).dataset.index!;
-                if ((destination.classList.contains("cardDiscard") || destination.classList.contains("minipileInner")) && !(game.selectedCards.includes(draggedCard) ? game.playableTwins() : draggedCard.playablePiles()).includes(pile)) return;
+                if ((destination.classList.contains("cardDiscard") || destination.classList.contains("minipileInner")) && !(client.selectedCards.includes(draggedCard) ? client.playableTwins() : draggedCard.playablePiles()).includes(pile)) return;
                 destination.classList.add("dragTarget")
-                game.wasDragging = true;
+                client.wasDragging = true;
             } else {
                 destination.classList.remove("dragTarget")
             }
@@ -62,7 +63,7 @@ export const setupDragging = () => {
     })
 
     addEventListener("pointerup", async e => {
-        if (game.selectedCards.length === 0) {
+        if (client.selectedCards.length === 0) {
             for (let i = 0; i < 4; i++) {
                 const cardDiscard = document.getElementsByClassName("cardDiscard" + i)[0];
                 cardDiscard.classList.remove("unplayable")
@@ -72,15 +73,26 @@ export const setupDragging = () => {
         draggedCard.element.classList.remove("dragging");
         draggedCard.element.style.left = "";
         draggedCard.element.style.top = "";
-        const selectedCards = Array.from(game.selectedCards);
+        const selectedCards = Array.from(client.selectedCards);
         for (const destination of document.getElementsByClassName("dragDestination")) {
             if (e.pageX > destination.getBoundingClientRect().x
                 && e.pageY > destination.getBoundingClientRect().y
                 && e.pageX < destination.getBoundingClientRect().x + destination.getBoundingClientRect().width
                 && e.pageY < destination.getBoundingClientRect().y + destination.getBoundingClientRect().height) {
                 if (!draggedCard.tags.includes("pickup") && !draggedCard.tags.includes("minipile") && (destination.classList.contains("cardDiscard") || destination.classList.contains("minipileInner"))) {
-                    if (destination.classList.contains("minipileInner")) draggedCard.tags.push("minipile");
                     const pile = +(destination as HTMLDivElement).dataset.index!;
+                    
+                    console.log("drawn on pile " + pile)
+
+                    client.sendPacket({
+                        type: "discard",
+                        card: draggedCard.id,
+                        pile: pile
+                    })
+                    /*return;
+                    
+                    if (destination.classList.contains("minipileInner")) draggedCard.tags.push("minipile");
+                    const pileB = +(destination as HTMLDivElement).dataset.index!;
                     if (game.selectedCards.length > 1 && game.selectedCards.includes(draggedCard)) {
                         const piles = game.playableTwins();
                         if (!piles.includes(pile)) return;
@@ -119,8 +131,17 @@ export const setupDragging = () => {
                         }
                     }
                     updateInventoryPlayability();
+                    */
                 }
                 if (destination === cardRack) {
+                    if (!client.getSelfPlayer().cards.includes(draggedCard)) {
+                        client.sendPacket({
+                            type: "pickup",
+                            card: draggedCard.id,
+                            animate: false
+                        })
+                    }
+                    /*
                     if (!game.player.cards.includes(draggedCard)) {
                         if (draggedCard.number.actionId === "draw3More") game.drawAmount += 3;
                         if (!game.player.hasTower("Green")) game.player.health--;
@@ -206,7 +227,7 @@ export const setupDragging = () => {
                         }
                         updateInventoryPlayability();
                         game.updateCardDiscard();
-                    };
+                    };*/
                 }
                 if (destination.classList.contains("giveCardAwayInner")) {
                     game.dealer.cards.push(draggedCard);
