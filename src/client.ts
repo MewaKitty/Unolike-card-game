@@ -1,6 +1,7 @@
-import type { CardNumber, CardColor, CardModifier } from "./cards.ts";
-import { game as game_ } from "./game.ts";
+import type { CardNumber, CardColor, CardModifier } from "./shared/cards.ts";
+//import { game as game_ } from "./game.ts";
 import { dragGap, dragGaps, setDraggedCard } from "./dragging.ts";
+import { SingleplayerGame } from "./singleplayer_game.ts";
 
 interface CardData {
     number: CardNumber
@@ -125,31 +126,34 @@ export class ClientCard {
         const innerElement = this.innerElement;
         element.classList.add("card");
         innerElement.classList.add("cardInner");
-        element.style = `--color: ${this.color.color}; --dark: ${this.color.dark}; --text: ${this.color.text ?? "#333"}`;
-        if (this.number.actionId === "tower") element.classList.add("towerCard");
-        innerElement.textContent = "";
-        const cardNameSpan = document.createElement("span");
-        cardNameSpan.textContent = this.number.name;
-        innerElement.appendChild(cardNameSpan);
-        if (this.number.description || this.color.description) {
-            const cardDescriptionSpan = document.createElement("span");
-            cardDescriptionSpan.classList.add("cardDescriptionSpan");
-            cardDescriptionSpan.textContent = this.number.actionId === "tower" && this.color.description ? this.color.description : this.number.description!;
-            innerElement.appendChild(cardDescriptionSpan);
-        }
-        if (this.modifier) {
-            const cardModifierSpan = document.createElement("span");
-            cardModifierSpan.classList.add("cardModifierSpan");
-            cardModifierSpan.textContent = "+ " + this.modifier.name;
-            innerElement.appendChild(cardModifierSpan);
+        if (!this.hidden && this.color) {
+            element.style = `--color: ${this.color.color}; --dark: ${this.color.dark}; --text: ${this.color.text ?? "#333"}`;
+            if (this.number.actionId === "tower") element.classList.add("towerCard");
+            innerElement.textContent = "";
+            const cardNameSpan = document.createElement("span");
+            cardNameSpan.textContent = this.number.name;
+            innerElement.appendChild(cardNameSpan);
+            if (this.number.description || this.color.description) {
+                const cardDescriptionSpan = document.createElement("span");
+                cardDescriptionSpan.classList.add("cardDescriptionSpan");
+                cardDescriptionSpan.textContent = this.number.actionId === "tower" && this.color.description ? this.color.description : this.number.description!;
+                innerElement.appendChild(cardDescriptionSpan);
+            }
+            if (this.modifier) {
+                const cardModifierSpan = document.createElement("span");
+                cardModifierSpan.classList.add("cardModifierSpan");
+                cardModifierSpan.textContent = "+ " + this.modifier.name;
+                innerElement.appendChild(cardModifierSpan);
+            }
+            if (this.number.actionId === "tower") return;
         }
         if (!this.hidden) innerElement.style = "";
-        if (this.number.actionId === "tower") return;
         if (this.hidden) element.style = `--color: #fff; --dark: #fff; color: black;`;
         if (this.hidden) innerElement.style = "color: black;";
         if (this.hidden) innerElement.textContent = `Card`;
     }
     updateAbilityWild(isOpponent: boolean) {
+        return;
         if (this.number.abilityWild) {
             if (isOpponent) {
 
@@ -167,7 +171,7 @@ export class ClientCard {
     isPlayable() {
         return true;
     }
-    playablePiles(forOpponent?: boolean): number[] {
+    playablePiles(): number[] {
         let availablePiles = [];
         for (let i = 0; i < 4; i++) {
             if (this.playableOn(client.discarded[i].at(-1)!)) availablePiles.push(i);
@@ -175,10 +179,10 @@ export class ClientCard {
         return availablePiles;
     }
     playableOn (card: ClientCard) {
-        if (card.number === this.number) return true;
-        if (card.color === this.color) return true;
-        if (this.color.wild) return true;
-        if (card.color.wild) return true;
+        if (card.number?.name === this.number?.name) return true;
+        if (card.color?.name === this.color?.name) return true;
+        if (this.color?.wild) return true;
+        if (card.color?.wild) return true;
         if (card.number.actionId === "purpleBlank") return true;
         return false;
     }
@@ -234,7 +238,7 @@ class ClientPlayer {
     getCardCount() {
         let count = 0;
         for (const card of this.cards) {
-            if (card.number.actionId !== "tower") count++;
+            if (card.number?.actionId !== "tower") count++;
         }
         return count;
     }
@@ -265,6 +269,7 @@ interface PickupPacket {
     type: "pickup",
     card: CardData,
     pickupQueuePush: CardData,
+    player: string,
     animate: boolean
 }
 type Packet = HealthPacket | PlayersPacket | DiscardPilesPacket | DiscardPacket | PickupPacket;
@@ -280,23 +285,70 @@ class Client {
     pickupQueue: ClientCard[];
     closedPile: number;
 
+    isMultiplayer: boolean | null;
+    game: SingleplayerGame | null;
+
     constructor() {
         this.players = [];
         this.selfId = "";
         this.wasDragging = false;
         this.selectedCards = [];
 
+        this.isMultiplayer = null;
+        this.game = null;
+
         this.discarded = [];
         this.pickupCard = null;
         this.pickupQueue = [];
         this.closedPile = -1;
     }
+    updateDiscardPiles () {
+        for (let i = 0; i < 4; i++) {
+            const pileContents = this.discarded[i];
+            const cardDiscard = document.getElementsByClassName("cardDiscard" + i)[0];
+            cardDiscard.textContent = "";
+            if (pileContents.length > 0) cardDiscard.appendChild(pileContents.at(-1)!.wrapper)
+            if (!pileContents.at(-1)?.tags.includes("discarded")) pileContents.at(-1)?.tags.push("discarded")
+            if (i === -1 && !pileContents.at(-1)?.tags.includes("minipile")) pileContents.at(-1)?.tags.push("minipile")
+            pileContents.at(-1)?.element.classList.remove("unplayable");
+            if (i === this.closedPile) {
+                cardDiscard.classList.add("closed");
+            } else {
+                cardDiscard.classList.remove("closed");
+            }
+            /*
+            if (i === game.drawPile && game.drawAmount > 0) {
+                cardDiscard.classList.add("drawPile");
+            } else {
+                cardDiscard.classList.remove("drawPile");
+            }
+            if (game.lockedPiles.includes(i)) {
+                cardDiscard.classList.add("lockedPile");
+            } else {
+                cardDiscard.classList.remove("lockedPile");
+            }
+            if (i >= 0 && game.isMinipileActive) {
+                cardDiscard.classList.add("disabledPile");
+            } else {
+                cardDiscard.classList.remove("disabledPile");
+            }*/
+        }
+    }
+    getPlayer (id: string) {
+        return this.players.find(player => player.id === id);
+    }
     async receivePacket(packet: Packet) {
         console.log("client packet received: ", packet)
+        console.log("client: ", client)
         switch (packet.type) {
             case "players":
                 this.players = packet.players.map(player => new ClientPlayer(player))
                 this.selfId = packet.selfId;
+                for (const card of client.getSelfPlayer().cards) document.getElementsByClassName("cardRack")[0]!.appendChild(card.wrapper);
+                document.querySelector(".opponentHand")!.textContent = "";
+                for (const card of client.getOpponent().cards) {
+                    document.querySelector(".opponentHand")!.appendChild(card.wrapper);
+                }
                 break;
             case "health":
                 if (this.selfId !== packet.player) {
@@ -312,16 +364,34 @@ class Client {
                 for (const discard of packet.discarded) {
                     this.discarded.push(discard.map(card => new ClientCard(card)))
                 }
+                
                 this.pickupCard = new ClientCard(packet.pickupCard);
                 this.pickupQueue = packet.pickupQueue.map(card => new ClientCard(card));
                 this.closedPile = packet.closedPile;
+
+                for (let i = 0; i < 4; i++) {
+                    const cardDiscard = document.querySelector<HTMLDivElement>(".cardDiscard" + i)!;
+                    if (!cardDiscard) continue;
+                    cardDiscard.appendChild(client.discarded[i].at(-1)!.wrapper)
+                    if (i === client.closedPile) cardDiscard.classList.add("closed");
+                }
+
+                document.querySelector(".pickupPile")?.appendChild((client.pickupCard!).wrapper)
+                
+                client.pickupCard!.hidden = false;
+                client.pickupCard!.updateElement();
+
+                for (let i = 0; i < 4; i++) {
+                    client.pickupQueue[i].hidden = false;
+                    client.pickupQueue[i].updateElement();
+                    document.querySelector(".pickupQueue")?.appendChild(client.pickupQueue[i].wrapper);
+                }
                 break;
             case "discard":
                 console.log("Discard time!")
                 this.discarded[packet.pile].push(new ClientCard(packet.card))
                 document.getElementsByClassName("cardDiscard" + packet.pile)[0].textContent = "";
                 document.getElementsByClassName("cardDiscard" + packet.pile)[0].appendChild(this.discarded[packet.pile].at(-1)!.wrapper)
-                console.log(client.getSelfPlayer());
                 const secondCard = this.discarded[packet.pile].at(-1)!;
                 secondCard.element.classList.remove("selectedCard");
                 if (client.selectedCards.includes(secondCard)) client.selectedCards.splice(client.selectedCards.indexOf(secondCard), 1);
@@ -330,63 +400,41 @@ class Client {
                         console.log("cardId", card.id, "packet", packet.card.id)
                         if (card.id === packet.card.id) {
                             console.log("removing!")
-                            card.wrapper.remove();
-                            console.log(card.wrapper)
+                            secondCard.updateElement();
                             player.cards.splice(player.cards.indexOf(card), 1);
                             client.updateInventoryPlayability();
                         }
                     }
                 }
-                for (let i = 0; i < 4; i++) {
-                    const pileContents = this.discarded[i];
-                    const cardDiscard = document.getElementsByClassName("cardDiscard" + i)[0];
-                    cardDiscard.textContent = "";
-                    if (pileContents.length > 0) cardDiscard.appendChild(pileContents.at(-1)!.wrapper)
-                    if (!pileContents.at(-1)?.tags.includes("discarded")) pileContents.at(-1)?.tags.push("discarded")
-                    if (i === -1 && !pileContents.at(-1)?.tags.includes("minipile")) pileContents.at(-1)?.tags.push("minipile")
-                    pileContents.at(-1)?.element.classList.remove("unplayable");
-                    if (i === this.closedPile) {
-                        cardDiscard.classList.add("closed");
-                    } else {
-                        cardDiscard.classList.remove("closed");
-                    }
-                    /*
-                    if (i === game.drawPile && game.drawAmount > 0) {
-                        cardDiscard.classList.add("drawPile");
-                    } else {
-                        cardDiscard.classList.remove("drawPile");
-                    }
-                    if (game.lockedPiles.includes(i)) {
-                        cardDiscard.classList.add("lockedPile");
-                    } else {
-                        cardDiscard.classList.remove("lockedPile");
-                    }
-                    if (i >= 0 && game.isMinipileActive) {
-                        cardDiscard.classList.add("disabledPile");
-                    } else {
-                        cardDiscard.classList.remove("disabledPile");
-                    }*/
-                }
                 break;
             case "pickup":
                 const card = new ClientCard(packet.card);
                 card.updateAbilityWild(false);
-                const cardRack = document.getElementsByClassName("cardRack")[0] as HTMLDivElement;
-                const pickupPile = document.getElementsByClassName("pickupPile")[0] as HTMLDivElement;
-                if (packet.animate) {
+                if (packet.player !== client.selfId) {
                     const placeholderDiv = document.createElement("div");
-                    placeholderDiv.classList.add("placeholderDiv");
-                    placeholderDiv.classList.add("wrapper");
-                    cardRack.appendChild(placeholderDiv)
+                    placeholderDiv.classList.add("placeholderGap");
+                    document.querySelector(".opponentHand")!.appendChild(placeholderDiv)
                     await client.animateElementMovement(card.element, placeholderDiv, card.wrapper);
                     placeholderDiv.remove();
+                    document.querySelector(".opponentHand")!.appendChild(card.wrapper);
+                    client.getPlayer(packet.player)!.cards.push(card);
+                } else {
+                    const cardRack = document.getElementsByClassName("cardRack")[0] as HTMLDivElement;
+                    if (packet.animate) {
+                        const placeholderDiv = document.createElement("div");
+                        placeholderDiv.classList.add("placeholderDiv");
+                        placeholderDiv.classList.add("wrapper");
+                        cardRack.appendChild(placeholderDiv)
+                        await client.animateElementMovement(card.element, placeholderDiv, card.wrapper);
+                        placeholderDiv.remove();
+                    }
+                    cardRack.appendChild(card.wrapper);
+                    if (client.getSelfPlayer().cards.includes(card)) client.getSelfPlayer().cards.splice(client.getSelfPlayer().cards.indexOf(card), 1)
+                    client.getSelfPlayer().cards.push(card);
+                    card.hidden = false;
+                    card.updateElement();
+                    client.updateInventoryPlayability();
                 }
-                cardRack.appendChild(card.wrapper);
-                if (client.getSelfPlayer().cards.includes(card)) client.getSelfPlayer().cards.splice(client.getSelfPlayer().cards.indexOf(card), 1)
-                client.getSelfPlayer().cards.push(card);
-                card.hidden = false;
-                card.updateElement();
-                client.updateInventoryPlayability();
                 card.tags.splice(card.tags.indexOf("pickup"), 1);
                 //game.pickupCard = new Card(true, ["pickup"])
                 client.pickupCard = client.pickupQueue.shift()!;
@@ -394,11 +442,18 @@ class Client {
                 client.pickupQueue.push(new ClientCard(packet.pickupQueuePush));
                 document.getElementsByClassName("pickupQueue")[0].appendChild(client.pickupQueue.at(-1)!.wrapper);
                 for (const card of document.querySelectorAll(".pickupPile > .cardWrapper")) card.remove();
-                pickupPile.appendChild(client.pickupCard.wrapper)
+                document.querySelector(".pickupPile")!.appendChild(client.pickupCard.wrapper)
+                client.updateDiscardPiles();
+                document.getElementsByClassName("pickupPile")[0].classList.add("animate");
         }
     }
-    sendPacket(packet: any) {
-        return game_.receivePacket(packet);
+    async sendPacket(packet: any) {
+        if (isMultiplayer) {
+            await socket!.send(JSON.stringify(packet));
+        } else {
+            await game!.receivePacket(this.game?.getPlayer(false), packet);
+        }
+        //return game_.receivePacket(packet);
     }
     getSelfPlayer() {
         return this.players.find(player => player.id === this.selfId)!;
@@ -431,7 +486,6 @@ class Client {
         } else {
             document.getElementsByClassName("pickupPile")[0]?.classList.remove("unplayable")
         }*/
-        console.log(client);
     }
     animateElementMovement(element: HTMLElement, destination: HTMLElement, parent: Element | false) {
         return new Promise(res => {
@@ -460,6 +514,8 @@ class Client {
         if (client.selectedCards.length === 1) return client.selectedCards[0].playablePiles();
         /*if (game.minipile.length > 0 && game.minipileAction === "war") return [];
         if (game.minipile.length > 0 && game.minipileAction === "war+2") return [];*/
+        return [];
+        /*
         const piles = [];
         if (client.selectedCards.length === 2 && !isNaN(+client.selectedCards[0].number.value!) && !isNaN(+client.selectedCards[1].number.value!)) {
             for (let index = -1; index < game.discarded.length; index++) {
@@ -518,7 +574,23 @@ class Client {
             }
         }
 
-        return piles;
+        return piles;*/
     }
 }
 export const client = new Client();
+
+let socket: WebSocket | null = null;
+let game = null;
+const isMultiplayer = false;
+client.isMultiplayer = isMultiplayer;
+if (isMultiplayer) {
+    socket = new WebSocket("http://localhost:3000/ws");
+    socket.addEventListener("message", (e) => {
+        client.receivePacket(JSON.parse(e.data));
+    })
+    console.debug("a");
+    console.debug(socket);
+} else {
+    game = new SingleplayerGame();
+    client.game = game;
+}

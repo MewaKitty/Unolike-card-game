@@ -1,6 +1,6 @@
 // import { game } from "./game.ts";
 import { setupDragging } from "./dragging.ts";
-import { Card } from "./cards.ts";
+//import { Card } from "./cards.ts";
 import colorData from "./data/colors.json";
 import towerData from "./data/towers.json";
 import abilityData from "./data/abilities.json";
@@ -15,17 +15,17 @@ for (let i = 0; i < 4; i++) {
     cardDiscard.classList.add("cardDiscard" + i)
     cardDiscard.dataset.index = i + "";
     console.log(client)
-    cardDiscard.appendChild(client.discarded[i][0].wrapper)
+    //cardDiscard.appendChild(client.discarded[i][0].wrapper)
     app.appendChild(cardDiscard);
-    //if (i === game.closedPile) cardDiscard.classList.add("closed");
+    if (i === client.closedPile) cardDiscard.classList.add("closed");
 }
 
 export const cardRack = document.createElement("div");
 cardRack.classList.add("cardRack");
 cardRack.classList.add("dragDestination");
-for (const card of client.getSelfPlayer().cards) cardRack.appendChild(card.wrapper);
+// for (const card of client.getSelfPlayer().cards) cardRack.appendChild(card.wrapper);
 
-client.updateInventoryPlayability();
+// client.updateInventoryPlayability();
 
 app.appendChild(cardRack);
 
@@ -35,18 +35,19 @@ const pickupLabel = document.createElement("span");
 pickupLabel.classList.add("pickupLabel");
 pickupPile.appendChild(pickupLabel);
 pickupLabel.textContent = "Pick up here until you can discard a card";
-pickupPile.appendChild((client.pickupCard!).wrapper)
+//pickupPile.appendChild((client.pickupCard!).wrapper)
 app.appendChild(pickupPile);
 
-client.pickupCard!.hidden = false;
-client.pickupCard!.updateElement();
+/*client.pickupCard!.hidden = false;
+client.pickupCard!.updateElement();*/
 const pickupQueue = document.createElement("div");
 pickupQueue.classList.add("pickupQueue");
+/*
 for (let i = 0; i < 4; i++) {
     client.pickupQueue[i].hidden = false;
     client.pickupQueue[i].updateElement();
     pickupQueue.appendChild(client.pickupQueue[i].wrapper);
-}
+}*/
 pickupPile.appendChild(pickupQueue);
 
 let pointerDownTime = 0
@@ -134,9 +135,9 @@ pickupPile.addEventListener("pointerup", async () => {
 
 const opponentHand = document.createElement("div");
 opponentHand.classList.add("opponentHand")
-for (const card of client.getOpponent().cards) {
+/*for (const card of client.getOpponent().cards) {
     opponentHand.appendChild(card.wrapper);
-}
+}*/
 app.appendChild(opponentHand);
 
 const opponentHandLabel = document.createElement("span");
@@ -541,3 +542,12 @@ towerChooser.addEventListener("animationend", e => {
 towerChooser.appendChild(towerChooserInner)
 towerChooser.hidden = true;
 app.appendChild(towerChooser);
+
+setTimeout(() => {
+    if (!client.isMultiplayer) {
+        console.log("updateDiscarded")
+        client.game?.updateDiscarded();
+        client.game?.addPlayer(false);
+        client.game?.addPlayer(true);
+    }
+}, 0);

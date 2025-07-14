@@ -46,9 +46,11 @@
   min-width: 7rem;
   user-select: none;
   transition: outline 160ms;
+  transition: width 320ms, max-width 320ms, min-width 320ms;
+}
+.cardRack .cardWrapper {
   transition: width 320ms, max-width 320ms, min-width 320ms, margin-right 320ms;
 }
-
 .cardDescriptionSpan, .cardModifierSpan {
   font-size: 0.8rem;
 }

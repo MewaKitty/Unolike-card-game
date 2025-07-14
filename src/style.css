@@ -1187,6 +1187,7 @@ div.selectedCard {
   background-color: black;
 }
 
-.placeholderDiv {
-  margin-right: -0.5rem;
+.placeholderGap {
+  min-height: 10rem;
+  min-width: 7rem;
 }
