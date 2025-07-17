@@ -1,0 +1,404 @@
+[
+    {
+        "name": "+2",
+        "draw": 2,
+        "description": "Can defend against other plus cards"
+    },
+    {
+        "name": "+5",
+        "draw": 5,
+        "description": "Can defend against other plus cards"
+    },
+    {
+        "name": "Skip",
+        "actionId": "skip"
+    },
+    {
+        "name": "+1",
+        "draw": 1,
+        "wild": true,
+        "description": "Can defend against other plus cards"
+    },
+    {
+        "name": "+2",
+        "draw": 2,
+        "wild": true,
+        "description": "Can defend against other plus cards"
+    },
+    {
+        "name": "+3",
+        "draw": 3,
+        "wild": true,
+        "description": "Can defend against other plus cards"
+    },
+    {
+        "name": "+4",
+        "draw": 4,
+        "wild": true,
+        "description": "Can defend against other plus cards",
+        "weight": 99
+    },
+    {
+        "name": "+5",
+        "draw": 5,
+        "wild": true,
+        "description": "Can defend against other plus cards"
+    },
+    {
+        "name": "+6",
+        "draw": 6,
+        "wild": true,
+        "description": "Worse than a +5!"
+    },
+    {
+        "name": "+7",
+        "draw": 7,
+        "wild": true,
+        "description": "Slightly better than a +5!"
+    },
+    {
+        "name": "+8",
+        "draw": 8,
+        "wild": true,
+        "description": "Slightly worse than a +10!"
+    },
+    {
+        "name": "+9",
+        "draw": 9,
+        "wild": true,
+        "description": "Not quite a +10"
+    },
+    {
+        "name": "+10",
+        "draw": 10,
+        "wild": true,
+        "description": "Better than a +5!"
+    },
+    {
+        "name": "Blank",
+        "wild": true,
+        "weight": 2
+    },
+    {
+        "name": "Swap hands",
+        "wild": true,
+        "actionId": "swap",
+        "weight": 0.2
+    },
+    {
+        "name": "Shuffle hands",
+        "wild": true,
+        "actionId": "shuffle",
+        "weight": 0.2
+    },
+    {
+        "name": "50",
+        "value": 50,
+        "color": "Gray",
+        "weight": 0.5,
+        "description": "50% +4 to you or opponent",
+        "actionId": "50"
+    },
+    {
+        "name": "Discard same color",
+        "actionId": "discardAll"
+    },
+    {
+        "name": "Add 10 pressure",
+        "actionId": "x10",
+        "wild": true,
+        "description": "Opponent draws 1-10 cards"
+    },
+    {
+        "name": "Draw color",
+        "actionId": "drawColor"
+    },
+    {
+        "name": "Discard 2 of color",
+        "actionId": "discard2Color"
+    },
+    {
+        "name": "Disarm",
+        "description": "Cancels out below landmines and locks",
+        "actionId": "disarm"
+    },
+    {
+        "name": "Rebound",
+        "description": "Makes a landmine attack opponent",
+        "actionId": "giveaway"
+    },
+    {
+        "name": "Any number",
+        "description": "Counts as any number",
+        "actionId": "#",
+        "value": 99
+    },
+    {
+        "name": "Card of happenings",
+        "description": "Just random occurances...",
+        "actionId": "randomBox"
+    },
+    {
+        "name": "+0",
+        "draw": 0,
+        "description": "Reflect plus cards with this",
+        "wild": true
+    },
+    {
+        "name": "+0",
+        "draw": 0,
+        "description": "Reflect plus cards with this"
+    },
+    {
+        "name": "Skip",
+        "actionId": "skip",
+        "wild": true
+    },
+    {
+        "name": "Minipile",
+        "actionId": "minipile",
+        "wild": true
+    },
+    {
+        "name": "Draw 3 more cards",
+        "description": "Acts like blank card after drawn",
+        "actionId": "draw3More",
+        "wild": true,
+        "weight": 3
+    },
+    {
+        "name": "Draw 3 and discard color",
+        "actionId": "draw3DiscardColor",
+        "wild": true
+    },
+    {
+        "name": "Draw 1 to 2 of color",
+        "description": "Draw a card; if color differs, draw again.",
+        "actionId": "draw1To2Color",
+        "wild": true
+    },
+    {
+        "name": "Reflect",
+        "draw": 0,
+        "actionId": "reflect",
+        "description": "Reflects any effects including plus cards",
+        "wild": true
+    },
+    {
+        "name": "99",
+        "value": 99,
+        "description": "Cannot be discarded until only 99s are in your inventory",
+        "actionId": "99",
+        "wild": true
+    },
+    {
+        "name": "Give away color",
+        "actionId": "giveAwayColor",
+        "wild": true
+    },
+    {
+        "name": "Lottery",
+        "description": "Every 1 in 243 lottery cards win! (not in real life ofc)",
+        "wild": true,
+        "actionId": "lottery"
+    },
+    {
+        "name": "Semi-blank",
+        "description": "Any card can be placed on top of this",
+        "color": "Red",
+        "actionId": "purpleBlank"
+    },
+    {
+        "name": "Semi-blank",
+        "description": "Any card can be placed on top of this",
+        "color": "Purple",
+        "actionId": "purpleBlank"
+    },
+    {
+        "name": "+4",
+        "draw": 4,
+        "description": "Now... as a normal card?"
+    },
+    {
+        "name": "Color draw",
+        "actionId": "colorDraw",
+        "wild": true
+    },
+    {
+        "name": "Box o' water",
+        "actionId": "blueRandom",
+        "description": "This is... the same thing???"
+    },
+    {
+        "name": "Box o' water",
+        "actionId": "blueRandom",
+        "description": "This is... the same thing???",
+        "wild": true
+    },
+    {
+        "name": "Reobtain a discarded card",
+        "actionId": "reobtain",
+        "description": "Discard or add to inventory!",
+        "wild": true
+    },
+    {
+        "name": "Forced +1",
+        "actionId": "forced+1"
+    },
+    {
+        "name": "Add 2 pressure",
+        "actionId": "x2",
+        "wild": true
+    },
+    {
+        "name": "Wild 1",
+        "actionId": "wild1",
+        "wild": true,
+        "abilityWild": "wild1"
+    },
+    {
+        "name": "Wild 2",
+        "actionId": "wild2",
+        "wild": true,
+        "abilityWild": "wild2"
+    },
+    {
+        "name": "Wild 3",
+        "actionId": "wild3",
+        "wild": true,
+        "abilityWild": "wild3"
+    },
+    {
+        "name": "Wild 4",
+        "actionId": "wild4",
+        "wild": true,
+        "abilityWild": "wild4"
+    },
+    {
+        "name": "...",
+        "description": "Play any card on top of this to get started.",
+        "value": -1,
+        "actionId": "warStartCard",
+        "unlisted": true
+    },
+    {
+        "name": "Randomize hand",
+        "description": "Replace each card in your hand with a new one",
+        "actionId": "randomizeHand",
+        "wild": true
+    },
+    {
+        "name": "Give card away",
+        "description": "Give a card away to the opponent",
+        "actionId": "giveCardAway"
+    },
+    {
+        "name": "Get rid of all 7s",
+        "actionId": "getRidOf7s",
+        "wild": true
+    },
+    {
+        "name": "+2 if color match",
+        "description": "Discard color card, +2 if matching color.",
+        "actionId": "+2IfColorMatch"
+    },
+    {
+        "name": "All give a card away",
+        "description": "Give away a card, and receive a card.",
+        "actionId": "allGiveCardAway"
+    },
+    {
+        "name": "Shuffle evenly",
+        "wild": true,
+        "actionId": "shuffleEvenly",
+        "weight": 0.2,
+        "description": "Distributes the cards with the same amount"
+    },
+    {
+        "name": "Give 2 cards away",
+        "description": "Give 2 cards away to the opponent",
+        "actionId": "give2CardsAway"
+    },
+    {
+        "name": "Force color",
+        "description": "Forces a color for the next round.",
+        "actionId": "forceColor",
+        "wild": true
+    },
+    {
+        "name": "War + 2",
+        "actionId": "forceColor",
+        "wild": true
+    },
+    {
+        "name": "Force green or wild",
+        "actionId": "forceGreenWild",
+        "wild": true
+    },
+    {
+        "name": "All color draw",
+        "actionId": "allColorDraw",
+        "wild": true
+    },
+    {
+        "name": "All plus 2! cards",
+        "description": "2! = 2*1 = 2 cards",
+        "color": "Red",
+        "actionId": "all+2"
+    },
+    {
+        "name": "Replace 4",
+        "wild": true,
+        "actionId": "replace4"
+    },
+    {
+        "name": "All replace all",
+        "wild": true,
+        "actionId": "allReplaceAll"
+    },
+    {
+        "name": "Reveal next 5 pickup cards",
+        "color": "Blue",
+        "actionId": "revealNext5"
+    },
+    {
+        "name": "Card removal chance",
+        "actionId": "cardRemovalChance"
+    },
+    {
+        "name": "All give 2 cards",
+        "description": "Give away 2 cards, and receive 2 cards.",
+        "actionId": "allGive2CardsAway",
+        "wild": true
+    },
+    {
+        "name": "Card loan",
+        "description": "Running out? Gain and play 4 cards in a row!",
+        "actionId": "4CardLoan",
+        "wild": true
+    },
+    {
+        "name": "Doubles",
+        "description": "Only allowed to play this 1 in 36 turns!",
+        "actionId": "doubles"
+    },
+    {
+        "name": "Tower",
+        "actionId": "tower",
+        "unlisted": true
+    },
+    {
+        "name": "Obtain a tower",
+        "actionId": "obtainTower",
+        "wild": true
+    },
+    {
+        "name": "Obtain 2 towers",
+        "actionId": "obtain2Towers"
+    },
+    {
+        "name": "Box o' oranges",
+        "actionId": "orangeRandom",
+        "description": "Who wants random occurances?! Anyone?"
+    }
+]
