@@ -1,8 +1,8 @@
 import type { CardNumber, CardColor, CardModifier } from "./shared/cards.ts";
 //import { game as game_ } from "./game.ts";
-import { dragGap, dragGaps, setDraggedCard } from "./dragging.ts";
 import { SingleplayerGame } from "./singleplayer_game.ts";
-
+import { ClientCard } from "./client_card.ts";
+import { BaseGame } from "./shared/base_game.ts";
 interface CardData {
     number: CardNumber
     color: CardColor
@@ -22,171 +22,6 @@ interface PlayerData {
     drawRemovalCards: CardData[];
     id: string;
 }
-export class ClientCard {
-    number: CardNumber
-    color: CardColor
-    hidden: boolean
-    tags: string[]
-    modifier: CardModifier | null
-    id: string;
-
-    element: HTMLDivElement
-    wrapper: HTMLDivElement
-    innerElement: HTMLDivElement
-    constructor(data: CardData) {
-        this.number = data.number;
-        this.color = data.color;
-        this.hidden = data.hidden;
-        this.tags = data.tags;
-        this.modifier = data.modifier;
-        this.id = data.id;
-
-        if (document.getElementById("card-" + data.id)) {
-            this.wrapper = document.getElementById("card-" + data.id) as HTMLDivElement;
-            this.element = document.getElementById("card-" + data.id)!.children[0] as HTMLDivElement;
-            this.innerElement = document.getElementById("card-" + data.id)!.children[0].children[0] as HTMLDivElement;
-            return;
-        }
-
-        const wrapper = document.createElement("div");
-        wrapper.classList.add("cardWrapper");
-        wrapper.id = "card-" + data.id;
-        const div = document.createElement("div");
-        this.element = div;
-        const innerElement = document.createElement("div");
-        this.innerElement = innerElement;
-        div.appendChild(innerElement);
-        this.updateElement();
-        wrapper.appendChild(this.element);
-        this.wrapper = wrapper;
-        let pointerDownTime = 0;
-        div.addEventListener("pointerdown", e => {
-            client.updateInventoryPlayability();
-            //if (this.tags.includes("pickup") && game.colorChooserActive) return;
-            if (!this.tags.includes("pickup") && !wrapper.parentElement?.classList.contains("minipileInner") && !this.isPlayable()) return;
-            if (this.tags.includes("discarded") && !wrapper.parentElement?.classList.contains("minipileInner")) return;
-            if (!this.tags.includes("pickup") && !wrapper.parentElement?.classList.contains("minipileInner") && wrapper.parentElement !== document.getElementsByClassName("cardRack")[0]) return;
-            //if (!game.playersTurn) return;
-            pointerDownTime = Date.now();
-            dragGap.x = e.pageX - div.getBoundingClientRect().left;
-            dragGap.y = e.pageY - div.getBoundingClientRect().top;
-            div.style.left = div.getBoundingClientRect().left + "px";
-            div.style.top = div.getBoundingClientRect().top + "px";
-            div.classList.add("dragging")
-            setDraggedCard(this);
-            for (const card of client.selectedCards) {
-                dragGaps.push({
-                    x: e.pageX - card.element.getBoundingClientRect().left,
-                    y: e.pageY - card.element.getBoundingClientRect().top
-                });
-            }
-
-            if (this.tags.includes("pickup")) return;
-            const piles = client.selectedCards.length > 0 && client.selectedCards.includes(this) ? client.playableTwins() : this.playablePiles();
-
-            for (let i = -1; i < 4; i++) {
-                const cardDiscard = document.getElementsByClassName("cardDiscard" + i)[0];
-                if (piles.includes(i)) {
-                    cardDiscard.classList.remove("unplayable")
-                } else {
-                    cardDiscard.classList.add("unplayable")
-                }
-                //if (i === game.closedPile) cardDiscard.classList.add("unplayable");
-            }
-        })
-        wrapper.addEventListener("pointerup", async () => {
-            if (Date.now() - pointerDownTime > 350) return;
-            if (!this.tags.includes("pickup") && !this.isPlayable()) return;
-            if (!client.getSelfPlayer().cards.includes(this)) return;
-            if (this.tags.includes("discarded")) return;
-            if (div.classList.contains("selectedCard")) {
-                div.classList.remove("selectedCard")
-                client.selectedCards.splice(client.selectedCards.indexOf(this), 1)
-            } else {
-                div.classList.add("selectedCard")
-                client.selectedCards.push(this);
-            }
-            if (client.selectedCards.length > 0) {
-                const piles = client.playableTwins();
-                for (let i = 0; i < 4; i++) {
-                    const cardDiscard = document.getElementsByClassName("cardDiscard" + i)[0];
-                    if (piles.includes(i)) {
-                        cardDiscard.classList.remove("unplayable")
-                    } else {
-                        cardDiscard.classList.add("unplayable")
-                    }
-                    //if (i === game.closedPile) cardDiscard.classList.add("unplayable");
-                }
-            }
-            client.updateInventoryPlayability();
-        })
-    }
-    updateElement() {
-        const element = this.element;
-        const innerElement = this.innerElement;
-        element.classList.add("card");
-        innerElement.classList.add("cardInner");
-        if (!this.hidden && this.color) {
-            element.style = `--color: ${this.color.color}; --dark: ${this.color.dark}; --text: ${this.color.text ?? "#333"}`;
-            if (this.number.actionId === "tower") element.classList.add("towerCard");
-            innerElement.textContent = "";
-            const cardNameSpan = document.createElement("span");
-            cardNameSpan.textContent = this.number.name;
-            innerElement.appendChild(cardNameSpan);
-            if (this.number.description || this.color.description) {
-                const cardDescriptionSpan = document.createElement("span");
-                cardDescriptionSpan.classList.add("cardDescriptionSpan");
-                cardDescriptionSpan.textContent = this.number.actionId === "tower" && this.color.description ? this.color.description : this.number.description!;
-                innerElement.appendChild(cardDescriptionSpan);
-            }
-            if (this.modifier) {
-                const cardModifierSpan = document.createElement("span");
-                cardModifierSpan.classList.add("cardModifierSpan");
-                cardModifierSpan.textContent = "+ " + this.modifier.name;
-                innerElement.appendChild(cardModifierSpan);
-            }
-            if (this.number.actionId === "tower") return;
-        }
-        if (!this.hidden) innerElement.style = "";
-        if (this.hidden) element.style = `--color: #fff; --dark: #fff; color: black;`;
-        if (this.hidden) innerElement.style = "color: black;";
-        if (this.hidden) innerElement.textContent = `Card`;
-    }
-    updateAbilityWild(isOpponent: boolean) {
-        return;
-        if (this.number.abilityWild) {
-            if (isOpponent) {
-
-            } else {
-                this.innerElement.querySelector(".cardDescriptionSpan")?.remove();
-                return;
-                /*if (!game.player.ability) return;
-                const cardDescriptionSpan = document.createElement("span");
-                cardDescriptionSpan.classList.add("cardDescriptionSpan");
-                cardDescriptionSpan.textContent = game.player.ability![this.number.abilityWild + "Text" as "wild1Text"];
-                this.innerElement.appendChild(cardDescriptionSpan);*/
-            }
-        }
-    }
-    isPlayable() {
-        return true;
-    }
-    playablePiles(): number[] {
-        let availablePiles = [];
-        for (let i = 0; i < 4; i++) {
-            if (this.playableOn(client.discarded[i].at(-1)!)) availablePiles.push(i);
-        }
-        return availablePiles;
-    }
-    playableOn (card: ClientCard) {
-        if (card.number?.name === this.number?.name) return true;
-        if (card.color?.name === this.color?.name) return true;
-        if (this.color?.wild) return true;
-        if (card.color?.wild) return true;
-        if (card.number.actionId === "purpleBlank") return true;
-        return false;
-    }
-}
 
 interface EnemyCard {
     start: string,
@@ -198,7 +33,7 @@ interface EnemyCard {
 class ClientPlayer {
     health: number;
     lives: number;
-    recentCards: { card: ClientCard, pile: number }[];
+    recentCards: ClientCard[];
     cards: ClientCard[];
     doublesCardAvailable: boolean;
     isChoosingDrawRemoval: boolean;
@@ -224,10 +59,7 @@ class ClientPlayer {
     constructor(data: PlayerData) {
         this.health = data.health;
         this.lives = data.lives;
-        this.recentCards = data.recentCards.map(card => ({
-            card: new ClientCard(card.card),
-            pile: card.pile
-        }));
+        this.recentCards = data.recentCards.map(card => (new ClientCard(card.card)));
         this.cards = data.cards.map(card => new ClientCard(card));
         this.doublesCardAvailable = data.doublesCardAvailable;
         this.isChoosingDrawRemoval = data.isChoosingDrawRemoval;
@@ -274,7 +106,7 @@ interface PickupPacket {
 }
 type Packet = HealthPacket | PlayersPacket | DiscardPilesPacket | DiscardPacket | PickupPacket;
 
-class Client {
+export class Client extends BaseGame {
     players: ClientPlayer[];
     selfId: string;
     wasDragging: boolean;
@@ -284,11 +116,14 @@ class Client {
     pickupCard: ClientCard | null;
     pickupQueue: ClientCard[];
     closedPile: number;
+    lockedPiles: number[];
 
     isMultiplayer: boolean | null;
     game: SingleplayerGame | null;
 
     constructor() {
+        super();
+
         this.players = [];
         this.selfId = "";
         this.wasDragging = false;
@@ -301,6 +136,7 @@ class Client {
         this.pickupCard = null;
         this.pickupQueue = [];
         this.closedPile = -1;
+        this.lockedPiles = [];
     }
     updateDiscardPiles () {
         for (let i = 0; i < 4; i++) {
@@ -394,7 +230,8 @@ class Client {
                 document.getElementsByClassName("cardDiscard" + packet.pile)[0].appendChild(this.discarded[packet.pile].at(-1)!.wrapper)
                 const secondCard = this.discarded[packet.pile].at(-1)!;
                 secondCard.element.classList.remove("selectedCard");
-                if (client.selectedCards.includes(secondCard)) client.selectedCards.splice(client.selectedCards.indexOf(secondCard), 1);
+                const selectedCard = client.selectedCards.find(card => secondCard.id === card.id);
+                if (selectedCard) client.selectedCards.splice(client.selectedCards.indexOf(selectedCard), 1);
                 for (const player of client.players) {
                     for (const card of player.cards) {
                         console.log("cardId", card.id, "packet", packet.card.id)
@@ -470,7 +307,7 @@ class Client {
         }
         for (const card of this.getSelfPlayer().cards) {
             card.updateAbilityWild(false);
-            if (card.isPlayable() || card.number.actionId === "tower") {
+            if (card.isPlayable() || card.number?.actionId === "tower") {
                 //hasPlayable = true;
                 card.element.classList.remove("unplayable")
                 if (!this.getSelfPlayer().isChoosingDrawRemoval || this.getSelfPlayer().drawRemovalCards.includes(card)) card.wrapper.classList.remove("cardWidthOut");

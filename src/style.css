@@ -1191,3 +1191,239 @@ div.selectedCard {
   min-height: 10rem;
   min-width: 7rem;
 }
+
+.mainMenu {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: #cccccc66;
+}
+
+@font-face {
+  font-family: LilitaOne;
+  src: url("./LilitaOne-Regular.ttf");
+}
+
+.gameMenuTitle {
+  position: absolute;
+  top: 10vh;
+  left: 50vw;
+  transform: translateX(-50%);
+  font-weight: bold;
+  font-size: 6rem;
+  font-family: LilitaOne;
+  color: white;
+  text-shadow: 4px 0 #000, -4px 0 #000, 0 4px #000, 0 -4px #000,
+               2px 2px #000, -2px -2px #000, 2px -2px #000, -2px 2px #000;
+}
+
+.gameMenuSingleplayer {
+  position: absolute;
+  top: 30vh;
+  left: 50vw;
+  transform: translateX(-50%);
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.cardShowcase {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.gameMenuSingleplayer.card {
+  height: 11rem;
+  width: 8rem;
+}
+
+.gameMenuSingleplayerInner.cardInner {
+  --color: #aaaaff;
+  --dark: #000099;
+}
+
+.cardCreatorButton.card {
+  position: absolute;
+  top: calc(30vh + 12rem);
+  left: 50vw;
+  transform: translateX(-50%);
+  font-weight: bold;
+  font-size: 1rem;
+  height: 11rem;
+  width: 8rem;
+}
+
+.cardCreatorButtonInner.cardInner {
+  --color: #ff9f00;
+  --dark: #9f4f00;
+}
+
+.cardCreatorMenu {
+  position: fixed;
+  width: 90vw;
+  height: 90vh;
+  background: white;
+  border: 2px solid black;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 1rem;
+  display: flex;
+  font-size: 2rem;
+  z-index: 10;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+@media (prefers-color-scheme: dark) {
+  .cardCreatorMenu {
+    background: #333;
+  }
+  .cardCreatorLeftPanel.cardCreatorLeftPanel {
+    background: #444;
+  }
+}
+
+.cardCreatorMenu h2 {
+  margin: 0;
+  font-size: 2.5rem;
+  font-family: LilitaOne;
+}
+
+.cardCreatorLeftPanel {
+  padding: 2rem;
+  width: 20vw;
+}
+
+.cardCreatorRightPanel {
+  flex-grow: 1;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cardCreatorMenu[hidden] {
+  display: none;
+}
+
+@keyframes scaleIn {
+  from {
+    max-width: 0;
+    max-height: 0;
+  }
+  to {
+    max-width: 90vw;
+    max-height: 90vh;
+  }
+}
+
+@keyframes scaleOut {
+  from {
+    max-width: 90vw;
+    max-height: 90vh;
+  }
+  to {
+    max-width: 0;
+    max-height: 0;
+  }
+}
+
+.cardCreatorLeftPanel {
+  background: #eee;
+}
+
+.cardCreatorCloseButton {
+  position: absolute;
+  right: 1rem;
+  top: 1rem;
+  background: #333;
+  border: 1px solid black;
+  font-family: Cabin;
+  font-size: 1.5rem;
+  padding: .5rem;
+  border-radius: .2rem;
+  cursor: pointer;
+  color: white;
+  transition: background-color .3s;
+}
+
+.cardCreatorCloseButton:hover {
+  background: #555;
+}
+
+.cardNameLabel, .cardDescriptionLabel, .cardDrawLabel {
+  font-size: 1.5rem;
+  font-family: LilitaOne;
+}
+
+.cardCreatorRightPanel input, .cardCreatorRightPanel textarea {
+  font-size: 1rem;
+  border: 1px solid black;
+  border-radius: .2rem;
+  font-family: Cabin;
+  transition: background-color .1s;
+}
+
+.cardCreatorRightPanel input:hover, .cardCreatorRightPanel textarea:hover {
+  background: #eee;
+}
+
+.cardCreatorRightPanel textarea {
+  height: 3rem;
+}
+
+.previewCard, .cardCreatorRightPanel .card {
+  font-size: 1rem;
+}
+
+.previewCardInner {
+  transition: background-color .3s, color .3s;
+}
+
+.previewCardInner, .coloredColorCard {
+  --color: #ffdddd;
+  --dark: #654062;
+}
+
+.drawAmountField {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+}
+
+#cardDraw {
+  flex-grow: 1;
+}
+
+.wildColorCardInner {
+  --color: #333;
+  --dark: #333;
+  --text: #fff;
+}
+
+.cardColorForms {
+  display: flex;
+  gap: 1rem;
+}
+
+.copyJSONButton {
+  background-color: #bbb;
+  border: 1px solid black;
+  font-family: Cabin;
+  font-size: 1.5rem;
+  padding: .5rem;
+  border-radius: .2rem;
+  cursor: pointer;
+  transition: background-color .3s;
+}
+
+.copyJSONButton:hover {
+  background-color: #999;
+}

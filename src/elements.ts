@@ -7,6 +7,7 @@ import abilityData from "./data/abilities.json";
 import { client } from "./client.ts";
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
+app.hidden = true;
 
 for (let i = 0; i < 4; i++) {
     const cardDiscard = document.createElement("div");
