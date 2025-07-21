@@ -5,3 +5,4 @@ import "./client.ts"
 import "./elements.ts"
 import "./mainMenu.ts";
 import "./cardCreator.ts";
+import "./singleplayerMenu.ts";

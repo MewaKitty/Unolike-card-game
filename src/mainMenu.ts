@@ -6,15 +6,23 @@ const mainMenu = document.createElement("div");
 mainMenu.classList.add("mainMenu");
 document.body.appendChild(mainMenu);
 
-const title = document.createElement("span");
+const title = document.createElement("h1");
 title.classList.add("gameMenuTitle");
 mainMenu.appendChild(title);
 
-const gameMenuSingleplayer = document.createElement("div");
+const gameMenuSingleplayer = document.createElement("button");
 gameMenuSingleplayer.classList.add("gameMenuSingleplayer");
 gameMenuSingleplayer.classList.add("card");
 mainMenu.appendChild(gameMenuSingleplayer);
 
+const singleplayerMenu = document.createElement("article");
+singleplayerMenu.classList.add("singleplayerMenu");
+document.body.appendChild(singleplayerMenu);
+singleplayerMenu.hidden = true;
+
+mainMenu.addEventListener("animationend", e => {
+    if (e.animationName === "scaleOut") mainMenu.hidden = true;
+});
 const gameMenuSingleplayerInner = document.createElement("div");
 gameMenuSingleplayerInner.classList.add("gameMenuSingleplayerInner");
 gameMenuSingleplayerInner.classList.add("cardInner");
@@ -22,16 +30,20 @@ gameMenuSingleplayerInner.textContent = "Singleplayer";
 gameMenuSingleplayer.appendChild(gameMenuSingleplayerInner);
 
 gameMenuSingleplayer.addEventListener("click", () => {
+    /*
     document.querySelector<HTMLDivElement>("#app")!.hidden = false;
-    mainMenu.hidden = true;
+    mainMenu.hidden = true;*/
+    singleplayerMenu.hidden = false;
+    singleplayerMenu.style.animation = "scaleIn .3s";
+    mainMenu.style.animation = "scaleOut .3s";
 })
 
-const cardCreatorMenu = document.createElement("div");
+const cardCreatorMenu = document.createElement("article");
 cardCreatorMenu.classList.add("cardCreatorMenu");
 document.body.appendChild(cardCreatorMenu);
 cardCreatorMenu.hidden = true;
 
-const cardCreatorButton = document.createElement("div");
+const cardCreatorButton = document.createElement("button");
 cardCreatorButton.classList.add("cardCreatorButton");
 cardCreatorButton.classList.add("card");
 mainMenu.appendChild(cardCreatorButton);
@@ -45,6 +57,7 @@ cardCreatorButton.appendChild(cardCreatorButtonInner);
 cardCreatorButton.addEventListener("click", () => {
     cardCreatorMenu.hidden = false;
     cardCreatorMenu.style.animation = "scaleIn .3s";
+    mainMenu.hidden = true;
 })
 
 title.textContent = "U.L.C.G"
@@ -54,7 +67,7 @@ const mainMenuGame = new SingleplayerGame();
 const cardShowcase = document.createElement("div");
 cardShowcase.classList.add("cardShowcase");
 cardShowcase.ariaHidden = "true";
-mainMenu.appendChild(cardShowcase);
+document.body.appendChild(cardShowcase);
 
 const convertRemToPixels = (rem: number) => {    
     return rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
@@ -91,7 +104,6 @@ const render = () => {
     animateTime += timeDelta;
     const totalWidth = cardShowCaseMap.length;
     const totalHeight = Object.keys(cardShowCaseMap[0]).length;
-    cardShowcase.textContent = "";
     const speed = innerWidth * 8;
     const leftDiff = animateTime * convertRemToPixels(7) / speed * xSpeedMult;
     const topDiff = animateTime * convertRemToPixels(10) / speed * ySpeedMult;

@@ -3,5 +3,16 @@
         "name": "+2",
         "description": "Can be stacked on top of other draw cards",
         "draw": 2
+    },
+    {
+        "name": "+4",
+        "description": "Can be stacked on top of other draw cards",
+        "draw": 4,
+        "wild": true
+    },
+    {
+        "name": "Blank",
+        "description": "Just an everyday ordinary blank card.",
+        "wild": true
     }
 ]

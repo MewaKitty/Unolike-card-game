@@ -1,7 +1,7 @@
 import { type CardNumber, type CardColor, type CardModifier } from "./shared/cards.ts";
 import { BaseCard } from "./shared/base_cards.ts";
 import { client, type Client } from "./client.ts";
-import { dragGap, dragGaps, setDraggedCard } from "./dragging.ts";
+import { dragGap, dragGaps, getDraggedCard, setDraggedCard } from "./dragging.ts";
 
 import numberData from "./data/numbers.json";
 
@@ -23,7 +23,7 @@ export class ClientCard extends BaseCard {
     id: string;
 
     element: HTMLDivElement
-    wrapper: HTMLDivElement
+    wrapper: HTMLButtonElement
     innerElement: HTMLDivElement
 
     declare game: Client
@@ -37,13 +37,13 @@ export class ClientCard extends BaseCard {
         this.id = data.id;
 
         if (document.getElementById("card-" + data.id)) {
-            this.wrapper = document.getElementById("card-" + data.id) as HTMLDivElement;
+            this.wrapper = document.getElementById("card-" + data.id) as HTMLButtonElement;
             this.element = document.getElementById("card-" + data.id)!.children[0] as HTMLDivElement;
             this.innerElement = document.getElementById("card-" + data.id)!.children[0].children[0] as HTMLDivElement;
             return;
         }
 
-        const wrapper = document.createElement("div");
+        const wrapper = document.createElement("button");
         wrapper.classList.add("cardWrapper");
         wrapper.id = "card-" + data.id;
         const div = document.createElement("div");
@@ -51,16 +51,20 @@ export class ClientCard extends BaseCard {
         const innerElement = document.createElement("div");
         this.innerElement = innerElement;
         div.appendChild(innerElement);
-        this.updateElement();
         wrapper.appendChild(this.element);
         this.wrapper = wrapper;
+        this.updateElement(false);
         let pointerDownTime = 0;
         div.addEventListener("pointerdown", e => {
+            const card = this.game.cardData[this.id] ?? this;
             client.updateInventoryPlayability();
+            console.log("client", client)
+            console.log("this", this)
+            console.log("playability", this.isPlayable())
             //if (this.tags.includes("pickup") && game.colorChooserActive) return;
-            if (!this.tags.includes("pickup") && !wrapper.parentElement?.classList.contains("minipileInner") && !this.isPlayable()) return;
-            if (this.tags.includes("discarded") && !wrapper.parentElement?.classList.contains("minipileInner")) return;
-            if (!this.tags.includes("pickup") && !wrapper.parentElement?.classList.contains("minipileInner") && wrapper.parentElement !== document.getElementsByClassName("cardRack")[0]) return;
+            if (!card.tags.includes("pickup") && !wrapper.parentElement?.classList.contains("minipileInner") && !card.isPlayable()) return;
+            if (card.tags.includes("discarded") && !wrapper.parentElement?.classList.contains("minipileInner")) return;
+            if (!card.tags.includes("pickup") && !wrapper.parentElement?.classList.contains("minipileInner") && wrapper.parentElement !== document.getElementsByClassName("cardRack")[0]) return;
             //if (!game.playersTurn) return;
             pointerDownTime = Date.now();
             dragGap.x = e.pageX - div.getBoundingClientRect().left;
@@ -76,12 +80,12 @@ export class ClientCard extends BaseCard {
                 });
             }
 
-            if (this.tags.includes("pickup")) return;
-            const piles = client.selectedCards.length > 0 && client.selectedCards.includes(this) ? client.playableTwins() : this.playablePiles();
+            if (card.tags.includes("pickup")) return;
+            const piles = client.selectedCards.length > 0 && client.selectedCards.includes(this) ? client.playableTwins(client.selectedCards, client.getSelfPlayer(), getDraggedCard()) : this.playablePiles();
 
             for (let i = -1; i < 4; i++) {
                 const cardDiscard = document.getElementsByClassName("cardDiscard" + i)[0];
-                if (piles.includes(i)) {
+                if (piles?.includes(i)) {
                     cardDiscard.classList.remove("unplayable")
                 } else {
                     cardDiscard.classList.add("unplayable")
@@ -92,7 +96,8 @@ export class ClientCard extends BaseCard {
         wrapper.addEventListener("pointerup", async () => {
             if (Date.now() - pointerDownTime > 350) return;
             console.log("select?")
-            if (!this.tags.includes("pickup") && !this.isPlayable()) return;
+            const card = this.game.cardData[this.id] ?? this;
+            if (!this.tags.includes("pickup") && !card.isPlayable()) return;
             console.log("is playable")
             if (!client.getSelfPlayer().cards.find(card => card.id === this.id)) return;
             console.log("has the card")
@@ -106,10 +111,10 @@ export class ClientCard extends BaseCard {
                 client.selectedCards.push(this);
             }
             if (client.selectedCards.length > 0) {
-                const piles = client.playableTwins();
+                const piles = client.playableTwins(client.selectedCards, client.getSelfPlayer(), getDraggedCard());
                 for (let i = 0; i < 4; i++) {
                     const cardDiscard = document.getElementsByClassName("cardDiscard" + i)[0];
-                    if (piles.includes(i)) {
+                    if (piles?.includes(i)) {
                         cardDiscard.classList.remove("unplayable")
                     } else {
                         cardDiscard.classList.add("unplayable")
@@ -120,7 +125,7 @@ export class ClientCard extends BaseCard {
             client.updateInventoryPlayability();
         })
     }
-    updateElement() {
+    updateElement(inventory: boolean) {
         const element = this.element;
         const innerElement = this.innerElement;
         element.classList.add("card");
@@ -145,7 +150,9 @@ export class ClientCard extends BaseCard {
                 innerElement.appendChild(cardModifierSpan);
             }
             if (this.number.actionId === "tower") return;
+            this.element.ariaLabel = `${this.color.name} ${this.number.name}${this.number.description ? " " + this.number.description : ""}${this.modifier?.name ? " " + this.modifier?.name : ""}`;
         }
+        if (!inventory) this.wrapper.disabled = true;
         if (!this.hidden) innerElement.style = "";
         if (this.hidden) element.style = `--color: #fff; --dark: #fff; color: black;`;
         if (this.hidden) innerElement.style = "color: black;";
@@ -168,7 +175,9 @@ export class ClientCard extends BaseCard {
         }
     }
     isPlayable() {
-        if (this.game.selectedCards.includes(this)) return true;
+        if (this.game.selectedCards.find(card => card.id === this.id)) return true;
+
+        if (this.game.drawAmount > 0 && !this.number?.draw) return false;
 
         if (this.game.selectedCards.length === 0) {
             if (this.playablePiles().length > 0) return true;

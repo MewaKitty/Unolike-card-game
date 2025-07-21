@@ -104,12 +104,22 @@ interface PickupPacket {
     player: string,
     animate: boolean
 }
-type Packet = HealthPacket | PlayersPacket | DiscardPilesPacket | DiscardPacket | PickupPacket;
+interface DrawAmountPacket {
+    type: "drawAmount",
+    value: number
+}
+type Packet = HealthPacket | PlayersPacket | DiscardPilesPacket | DiscardPacket | PickupPacket | DrawAmountPacket;
 
+/**
+ * @clasdesc The client representation of the game instance.
+ */
 export class Client extends BaseGame {
     players: ClientPlayer[];
+    /** The id of the player represented by the client. */
     selfId: string;
+    /** Whether or not the player is dragging a card. */
     wasDragging: boolean;
+    /** The selected cards to play. */
     selectedCards: ClientCard[];
 
     discarded: ClientCard[][];
@@ -118,9 +128,22 @@ export class Client extends BaseGame {
     closedPile: number;
     lockedPiles: number[];
 
+    /** Whether this is a singleplayer internal game or a multiplayer external game. */
     isMultiplayer: boolean | null;
+    /** The singleplayer game instance. */
     game: SingleplayerGame | null;
 
+    drawAmount: number;
+
+    isMinipileActive: boolean;
+    minipile: ClientCard[];
+
+    /** The cards shown in the game. */
+    cardData: Record<string, ClientCard>;
+
+    /**
+     * Creates the client game instance.
+     */
     constructor() {
         super();
 
@@ -137,7 +160,17 @@ export class Client extends BaseGame {
         this.pickupQueue = [];
         this.closedPile = -1;
         this.lockedPiles = [];
+
+        this.drawAmount = 0;
+        this.isMinipileActive = false;
+        this.minipile = [];
+
+        this.cardData = {};
     }
+
+    /**
+     * Re-renders the discard piles.
+     */
     updateDiscardPiles () {
         for (let i = 0; i < 4; i++) {
             const pileContents = this.discarded[i];
@@ -170,9 +203,20 @@ export class Client extends BaseGame {
             }*/
         }
     }
+
+    /**
+     * Retrieves a player.
+     * @param id The id of the player to retrieve.
+     * @returns The client player.
+     */
     getPlayer (id: string) {
         return this.players.find(player => player.id === id);
     }
+
+    /**
+     * Handles a server packet.
+     * @param packet The server packet.
+     */
     async receivePacket(packet: Packet) {
         console.log("client packet received: ", packet)
         console.log("client: ", client)
@@ -184,6 +228,11 @@ export class Client extends BaseGame {
                 document.querySelector(".opponentHand")!.textContent = "";
                 for (const card of client.getOpponent().cards) {
                     document.querySelector(".opponentHand")!.appendChild(card.wrapper);
+                }
+                for (const player of this.players) {
+                    for (const card of player.cards) {
+                        this.cardData[card.id] = card;
+                    }
                 }
                 break;
             case "health":
@@ -199,9 +248,11 @@ export class Client extends BaseGame {
                 this.discarded.length = 0;
                 for (const discard of packet.discarded) {
                     this.discarded.push(discard.map(card => new ClientCard(card)))
+                    this.cardData[this.discarded.at(-1)![0].id] = this.discarded.at(-1)![0];
                 }
                 
                 this.pickupCard = new ClientCard(packet.pickupCard);
+                this.cardData[this.pickupCard.id] = this.pickupCard;
                 this.pickupQueue = packet.pickupQueue.map(card => new ClientCard(card));
                 this.closedPile = packet.closedPile;
 
@@ -226,8 +277,12 @@ export class Client extends BaseGame {
             case "discard":
                 console.log("Discard time!")
                 this.discarded[packet.pile].push(new ClientCard(packet.card))
+                const cardElem = this.discarded[packet.pile].at(-1)!.wrapper;
+                await this.animateElementMovement(cardElem, (document.getElementsByClassName("cardDiscard" + packet.pile)[0]?.children[0] ?? document.getElementsByClassName("cardDiscard" + packet.pile)[0]) as HTMLElement, false);
+                cardElem.style.position = "";
                 document.getElementsByClassName("cardDiscard" + packet.pile)[0].textContent = "";
-                document.getElementsByClassName("cardDiscard" + packet.pile)[0].appendChild(this.discarded[packet.pile].at(-1)!.wrapper)
+                document.getElementsByClassName("cardDiscard" + packet.pile)[0].appendChild(cardElem)
+                this.discarded[packet.pile].at(-1)!.updateElement();
                 const secondCard = this.discarded[packet.pile].at(-1)!;
                 secondCard.element.classList.remove("selectedCard");
                 const selectedCard = client.selectedCards.find(card => secondCard.id === card.id);
@@ -245,7 +300,11 @@ export class Client extends BaseGame {
                 }
                 break;
             case "pickup":
+                this.drawAmount -= 1;
+                document.querySelector(".drawAmountText")!.textContent = this.drawAmount > 0 ? "+" + this.drawAmount : "";
                 const card = new ClientCard(packet.card);
+                this.cardData[card.id] = card;
+                console.debug("new card picked up", card);
                 card.updateAbilityWild(false);
                 if (packet.player !== client.selfId) {
                     const placeholderDiv = document.createElement("div");
@@ -274,16 +333,27 @@ export class Client extends BaseGame {
                 }
                 card.tags.splice(card.tags.indexOf("pickup"), 1);
                 //game.pickupCard = new Card(true, ["pickup"])
-                client.pickupCard = client.pickupQueue.shift()!;
-                client.pickupCard.tags.push("pickup");
-                client.pickupQueue.push(new ClientCard(packet.pickupQueuePush));
-                document.getElementsByClassName("pickupQueue")[0].appendChild(client.pickupQueue.at(-1)!.wrapper);
-                for (const card of document.querySelectorAll(".pickupPile > .cardWrapper")) card.remove();
-                document.querySelector(".pickupPile")!.appendChild(client.pickupCard.wrapper)
-                client.updateDiscardPiles();
-                document.getElementsByClassName("pickupPile")[0].classList.add("animate");
+                if (packet.pickupQueuePush) {
+                    client.pickupCard = client.pickupQueue.shift()!;
+                    client.pickupCard.tags.push("pickup");
+                    client.pickupQueue.push(new ClientCard(packet.pickupQueuePush));
+                    document.getElementsByClassName("pickupQueue")[0].appendChild(client.pickupQueue.at(-1)!.wrapper);
+                    for (const card of document.querySelectorAll(".pickupPile > .cardWrapper")) card.remove();
+                    document.querySelector(".pickupPile")!.appendChild(client.pickupCard.wrapper)
+                    client.updateDiscardPiles();
+                }
+                break;
+            case "drawAmount":
+                this.drawAmount = packet.value;
+                document.querySelector(".drawAmountText")!.textContent = this.drawAmount > 0 ? "+" + this.drawAmount : "";
+                this.updateInventoryPlayability();
         }
     }
+
+    /**
+     * Sends a packet to the server.
+     * @param packet The packet to send.
+     */
     async sendPacket(packet: any) {
         if (isMultiplayer) {
             await socket!.send(JSON.stringify(packet));
@@ -292,12 +362,26 @@ export class Client extends BaseGame {
         }
         //return game_.receivePacket(packet);
     }
+
+    /**
+     * Gets the player represented by the client.
+     * @returns The current client player.
+     */
     getSelfPlayer() {
         return this.players.find(player => player.id === this.selfId)!;
     }
+
+    /**
+     * Gets the player that's not the client.
+     * @returns The current opponent player.
+     */
     getOpponent() {
         return this.players.find(player => player.id !== this.selfId)!;
     }
+
+    /**
+     * Re-renders the playability opacities of the cards.
+     */
     updateInventoryPlayability() {
         //let hasPlayable = false;
         if (this.getSelfPlayer().isChoosingDrawRemoval) {
@@ -306,6 +390,7 @@ export class Client extends BaseGame {
             document.getElementsByClassName("cardRack")[0]?.classList.remove("isChoosingDrawRemoval");
         }
         for (const card of this.getSelfPlayer().cards) {
+            card.updateElement(true);
             card.updateAbilityWild(false);
             if (card.isPlayable() || card.number?.actionId === "tower") {
                 //hasPlayable = true;
@@ -316,15 +401,22 @@ export class Client extends BaseGame {
                 if (this.getSelfPlayer().isChoosingDrawRemoval && !this.getSelfPlayer().drawRemovalCards.includes(card)) card.wrapper.classList.add("cardWidthOut");
             }
         }
-        if (document.getElementsByClassName("playerCardCount")[0]) document.getElementsByClassName("playerCardCount")[0].textContent = client.getSelfPlayer().getCardCount() + "";
-        if (document.getElementsByClassName("opponentCardCount")[0]) document.getElementsByClassName("opponentCardCount")[0].textContent = client.getOpponent().getCardCount() + "";
+        if (document.getElementsByClassName("playerCardCount")[0]) document.getElementsByClassName("playerCardCount")[0].textContent = client.getSelfPlayer().getCardCount() + " cards";
+        if (document.getElementsByClassName("opponentCardCount")[0]) document.getElementsByClassName("opponentCardCount")[0].textContent = client.getOpponent().getCardCount() + " cards";
         /*if (hasPlayable) {
             document.getElementsByClassName("pickupPile")[0]?.classList.add("unplayable")
         } else {
             document.getElementsByClassName("pickupPile")[0]?.classList.remove("unplayable")
         }*/
     }
-    animateElementMovement(element: HTMLElement, destination: HTMLElement, parent: Element | false) {
+
+    /**
+     * Animates movement of an element.
+     * @param element The child element to move.
+     * @param destination The destination to visually go to.
+     * @param parent The destination to append the child to; set to false to not add
+     */
+    animateElementMovement(element: HTMLElement, destination: HTMLElement, parent: Element | false): Promise<null> {
         return new Promise(res => {
             console.debug(element.getBoundingClientRect())
             console.debug(destination)
@@ -346,72 +438,6 @@ export class Client extends BaseGame {
                 }, 0)
             });
         });
-    }
-    playableTwins() {
-        if (client.selectedCards.length === 1) return client.selectedCards[0].playablePiles();
-        /*if (game.minipile.length > 0 && game.minipileAction === "war") return [];
-        if (game.minipile.length > 0 && game.minipileAction === "war+2") return [];*/
-        return [];
-        /*
-        const piles = [];
-        if (client.selectedCards.length === 2 && !isNaN(+client.selectedCards[0].number.value!) && !isNaN(+client.selectedCards[1].number.value!)) {
-            for (let index = -1; index < game.discarded.length; index++) {
-                if (game.isMinipileActive && index >= 0) continue;
-                if (!game.isMinipileActive && index === -1) continue;
-                const discard = index === -1 ? game.minipile : game.discarded[index];
-                if (game.closedPile === index) continue;
-                if (game.lockedPiles.includes(index)) {
-                    if ((game.selectedCards[0].modifier?.actionId !== "lock" && game.selectedCards[0].modifier?.actionId !== "disarm") || (game.selectedCards[1].modifier?.actionId !== "lock" && game.selectedCards[0].modifier?.actionId !== "disarm")) continue;
-                }
-                if (discard.at(-1)?.number.value === game.selectedCards[0].number.value! + game.selectedCards[1].number.value!) piles.push(index)
-                if (game.selectedCards[0].number.actionId === "#" && numberData.map(number => number.value).includes(discard.at(-1)?.number.value! - game.selectedCards[1].number.value!)) piles.push(index);
-                if (game.selectedCards[1].number.actionId === "#" && numberData.map(number => number.value).includes(discard.at(-1)?.number.value! - game.selectedCards[0].number.value!)) piles.push(index);
-            }
-        }
-        if (game.selectedCards.length === 2 && game.player.getCardCount() >= 3) {
-            let match = [];
-            for (let index = -1; index < game.discarded.length; index++) {
-                if (game.isMinipileActive && index >= 0) continue;
-                if (!game.isMinipileActive && index === -1) continue;
-                if (game.lockedPiles.includes(index)) {
-                    if (game.selectedCards[0].modifier?.actionId !== "lock" && game.selectedCards[0].modifier?.actionId !== "disarm") continue;
-                }
-                const discard = index === -1 ? game.minipile : game.discarded[index];
-                if (discard.at(-1)?.number === game.selectedCards[0].number && discard.at(-1)?.color === game.selectedCards[0].color) match.push(index);
-            }
-            if (match.length > 0) piles.push(...match);
-        }
-        if (game.selectedCards[0].number === game.selectedCards[1].number) {
-            if (game.selectedCards.length === 2) {
-                piles.push(...game.selectedCards.map(card => card.playablePiles()).flat());
-            } else {
-                piles.push(...game.selectedCards.filter(card => card !== getDraggedCard()).map(card => card.playablePiles()).flat())
-            }
-        }
-        if (game.selectedCards.length > 0) {
-            const sorted = game.selectedCards.sort((a, b) => a.number.value! - b.number.value!);
-            console.log(sorted);
-            let last = null;
-            let isValid = true;
-            for (const card of sorted) {
-                if (last === null) {
-                    last = card;
-                    continue;
-                }
-                if (card.number.value !== last.number.value! + 1 && last.number.actionId !== "#") isValid = false;
-                last = card;
-            }
-            console.log("isValid: " + isValid)
-            if (isValid) piles.push(...sorted[0].playablePiles())
-        }
-        // Handle discard 2 of color
-        if (game.selectedCards[0]?.number.actionId === "discard2Color") {
-            if (game.selectedCards[1]?.color === game.selectedCards[0].color) {
-                return game.selectedCards[0].playablePiles();
-            }
-        }
-
-        return piles;*/
     }
 }
 export const client = new Client();

@@ -136,6 +136,7 @@ pickupPile.addEventListener("pointerup", async () => {
 
 const opponentHand = document.createElement("div");
 opponentHand.classList.add("opponentHand")
+opponentHand.setAttribute("aria-describedby", "opponentHandLabel")
 /*for (const card of client.getOpponent().cards) {
     opponentHand.appendChild(card.wrapper);
 }*/
@@ -143,6 +144,7 @@ app.appendChild(opponentHand);
 
 const opponentHandLabel = document.createElement("span");
 opponentHandLabel.classList.add("opponentHandLabel");
+opponentHandLabel.id = "opponentHandLabel";
 opponentHandLabel.textContent = "Dealer's cards";
 app.appendChild(opponentHandLabel);
 
@@ -380,12 +382,12 @@ app.appendChild(resultScreen);
 
 const playerCardCount = document.createElement("div");
 playerCardCount.classList.add("playerCardCount");
-playerCardCount.textContent = "7";
+playerCardCount.textContent = "7 cards";
 app.appendChild(playerCardCount)
 
 const opponentCardCount = document.createElement("div");
 opponentCardCount.classList.add("opponentCardCount");
-opponentCardCount.textContent = "7";
+opponentCardCount.textContent = "7 cards";
 app.appendChild(opponentCardCount)
 
 const reobtainRack = document.createElement("div");
@@ -439,7 +441,8 @@ opponentHealthBar.appendChild(opponentHealthBarContent);
 
 const abilityChooser = document.createElement("div");
 abilityChooser.classList.add("abilityChooser");
-app.appendChild(abilityChooser);
+abilityChooser.hidden = true;
+document.body.appendChild(abilityChooser);
 
 const abilityChooserLabel = document.createElement("span");
 abilityChooserLabel.textContent = "Choose an ability card";
@@ -452,7 +455,7 @@ abilityChooser.addEventListener("animationend", e => {
 })
 
 for (const ability of abilityData) {
-    const abilityCard = document.createElement("div");
+    const abilityCard = document.createElement("button");
     abilityCard.classList.add("card")
     abilityCard.classList.add("abilityCard");
     const abilityCardInner = document.createElement("div");

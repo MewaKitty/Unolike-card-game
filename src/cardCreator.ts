@@ -1,3 +1,5 @@
+import "./cardCreator.css";
+
 const cardCreator = document.querySelector<HTMLDivElement>(".cardCreatorMenu")!;
 
 const cardCreatorLeftPanel = document.createElement("div");

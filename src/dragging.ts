@@ -1,6 +1,7 @@
 //import { Card } from "./cards.ts";
 //import { game, updateInventoryPlayability } from "./game.ts";
-import { client, type ClientCard } from "./client.ts";
+import { client } from "./client.ts";
+import type { ClientCard } from "./client_card.ts";
 
 let draggedCard: ClientCard | null = null;
 export let dragGap: { x: number, y: number } = { x: -1, y: -1 };
@@ -53,7 +54,7 @@ export const setupDragging = () => {
                 && e.pageX < destination.getBoundingClientRect().x + destination.getBoundingClientRect().width
                 && e.pageY < destination.getBoundingClientRect().y + destination.getBoundingClientRect().height) {
                 const pile = +(destination as HTMLDivElement).dataset.index!;
-                if ((destination.classList.contains("cardDiscard") || destination.classList.contains("minipileInner")) && !(client.selectedCards.includes(draggedCard) ? client.playableTwins() : draggedCard.playablePiles()).includes(pile)) return;
+                if ((destination.classList.contains("cardDiscard") || destination.classList.contains("minipileInner")) && !(client.selectedCards.includes(draggedCard) ? client.playableTwins(client.selectedCards, client.getSelfPlayer(), getDraggedCard()) : draggedCard.playablePiles()).includes(pile)) return;
                 destination.classList.add("dragTarget")
                 client.wasDragging = true;
             } else {
@@ -83,10 +84,11 @@ export const setupDragging = () => {
                     const pile = +(destination as HTMLDivElement).dataset.index!;
                     
                     console.log("drawn on pile " + pile)
-
+                    
                     client.sendPacket({
                         type: "discard",
                         card: draggedCard.id,
+                        cards: client.selectedCards.map(card => card.id),
                         pile: pile
                     })
                     /*return;

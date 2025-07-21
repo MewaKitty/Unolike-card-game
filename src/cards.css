@@ -14,13 +14,16 @@
   cursor: pointer;
   box-sizing: border-box;
   --translateY: 0;
-  transition: left 80ms, top 80ms, opacity 160ms, width 320ms, max-width 320ms, min-width 320ms, margin-right 320ms;
+  transition: left 80ms, top 80ms, opacity 160ms, width 320ms, max-width 320ms, min-width 320ms, margin-right 320ms, transform 320ms;
   background: white;
   box-sizing: border-box;
   white-space: pre-line;
   -webkit-user-select: none;
   user-select: none;
   font-family: Cabin;
+  -webkit-box-shadow: 3px 3px 3px 0px #0000005f; 
+  box-shadow: 3px 3px 3px 0px #0000005f;
+  text-align: left;
 }
 
 .towerCard {
@@ -44,6 +47,7 @@
   border-radius: .5rem;
   display: flex;
   flex-direction: column;
+  transition: background-color 320ms, color 320ms;
 }
 .cardWrapper {
   height: 10rem;
@@ -53,6 +57,8 @@
   user-select: none;
   transition: outline 160ms;
   transition: width 320ms, max-width 320ms, min-width 320ms;
+  background: none;
+  border: none;
 }
 .cardRack .cardWrapper {
   transition: width 320ms, max-width 320ms, min-width 320ms, margin-right 320ms;
