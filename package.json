@@ -15,5 +15,8 @@
   },
   "trustedDependencies": [
     "core-js"
-  ]
+  ],
+  "dependencies": {
+    "pixi.js": "^8.11.0"
+  }
 }

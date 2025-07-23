@@ -152,7 +152,7 @@ export class ClientCard extends BaseCard {
             if (this.number.actionId === "tower") return;
             this.element.ariaLabel = `${this.color.name} ${this.number.name}${this.number.description ? " " + this.number.description : ""}${this.modifier?.name ? " " + this.modifier?.name : ""}`;
         }
-        if (!inventory) this.wrapper.disabled = true;
+        this.wrapper.disabled = !inventory;
         if (!this.hidden) innerElement.style = "";
         if (this.hidden) element.style = `--color: #fff; --dark: #fff; color: black;`;
         if (this.hidden) innerElement.style = "color: black;";

@@ -25,6 +25,8 @@ cardCreatorRightPanel.appendChild(exitButton);
 
 exitButton.addEventListener("click", () => {
     cardCreator.style.animation = "scaleOut .3s";
+    document.querySelector<HTMLDivElement>(".mainMenu")!.hidden = false;
+    document.querySelector<HTMLDivElement>(".mainMenu")!.style.animation = "scaleIn .3s";
 })
 
 cardCreator.addEventListener("animationend", e => {
