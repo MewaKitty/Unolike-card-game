@@ -23,7 +23,7 @@ export abstract class Player implements BasePlayer {
         this.recentCards = [];
         this.cards = [];
 
-        for (let i = 0; i < 7; i++) this.cards.push(new Card(this.game));
+        for (let i = 0; i < 25; i++) this.cards.push(new Card(this.game));
     }
     data (hideCards: boolean) {
         return {
@@ -49,8 +49,9 @@ export abstract class Player implements BasePlayer {
      * Forces the player to add a specific card.
      * @param card The card
      * @param animate Whether to tell the client to animate the card movement.
+     * @param duration The duration to tell the client to animate for.
      */
-    async addCard (card: Card, animate: boolean) {
+    async addCard (card: Card, animate: boolean, duration?: number) {
         if (this.cards.includes(card)) this.cards.splice(this.cards.indexOf(card), 1)
         this.cards.push(card);
         if (card.tags.includes("pickup")) {
@@ -64,7 +65,8 @@ export abstract class Player implements BasePlayer {
                     card: card.data(player.id !== this.id),
                     pickupQueuePush: this.game.pickupQueue.at(-1)!.data(true),
                     player: this.id,
-                    animate
+                    animate,
+                    duration: duration ?? 500
                 })
             }
             return;
@@ -75,7 +77,8 @@ export abstract class Player implements BasePlayer {
                 card: card.data(player.id !== this.id),
                 pickupQueuePush: null,
                 player: this.id,
-                animate
+                animate,
+                duration: duration ?? 500
             })
         }
     }

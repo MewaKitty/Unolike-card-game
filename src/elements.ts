@@ -64,89 +64,7 @@ pickupPile.addEventListener("pointerup", async () => {
         card: client.pickupCard!.id,
         animate: true
     })
-    /*
-    if (!game.playersTurn) return;
-    console.log(game.wasDragging)
-    if (game.wasDragging) return;
-    //game.playersTurn = false;
-    const placeholderDiv = document.createElement("div");
-    placeholderDiv.classList.add("placeholderDiv");
-    placeholderDiv.classList.add("wrapper");
-    cardRack.appendChild(placeholderDiv)
-    //setTimeout(() => placeholderDiv.remove(), 200)
-    game.pickupCard.element.style.position = "";
-    game.pickupCard.element.style.left = "";
-    game.pickupCard.element.style.top = "";
-    game.pickupCard.element.classList.remove("dragging")
-    await game.animateElementMovement(game.pickupCard.element, placeholderDiv, game.pickupCard.wrapper)
-    document.getElementsByClassName("pickupPile")[0].classList.add("animate");
-    placeholderDiv.remove()
-    if (game.pickupCard.number.actionId === "draw3More") game.drawAmount += 3;
-    if (!game.player.hasTower("Green")) game.player.health--;
-    game.player.updateHealthCount();
-    const targetCard = game.pickupCard;
-    game.addToRack(game.pickupCard)
-    if (targetCard.modifier?.actionId === "transfer") {
-        for (const card of game.player.cards) {
-            if (card.number === targetCard.number) {
-                game.dealer.cards.push(card);
-                game.player.cards.splice(game.player.cards.indexOf(card));
-                document.getElementsByClassName("opponentHand")[0].appendChild(card.wrapper);
-                console.info("trasfer")
-                game.updateHands();
-            }
-        }
-    }
-    console.debug("draw", game.drawAmount)
-    if (game.drawAmount > 1) {
-        game.player.isChoosingDrawRemoval = true;
-        game.player.drawRemovalCards.length = 0;
-        game.player.drawRemovalCards.push(targetCard);
-    }
-    for (let i = 0; i < Math.min(game.drawAmount - 1, 30) + (game.dangerCard?.attack === "plusOneExtra" ? 1 : 0); i++) {
-        const newCard = new Card();
-        if (newCard.number.actionId === "draw3More") game.drawAmount += 3;
-        if (!game.player.hasTower("Green")) game.player.health--;
-        game.player.updateHealthCount();
-        game.addToRack(newCard)
-        game.player.drawRemovalCards.push(newCard);
-        if (newCard.modifier?.actionId === "transfer") {
-            for (const card of game.player.cards) {
-                if (card.number === newCard.number) {
-                    game.dealer.cards.push(card);
-                    game.player.cards.splice(game.player.cards.indexOf(card));
-                    document.getElementsByClassName("opponentHand")[0].appendChild(card.wrapper);
-                    console.info("trasfer")
-                    game.updateHands();
-                }
-            }
-        }
-    }
-    cardRack.scrollTo({
-        left: cardRack.scrollWidth,
-        behavior: "smooth"
-    });
-    game.checkForWinCondition(false);
-    game.drawAmount = 0;
-    document.getElementsByClassName("drawAmountText")[0].textContent = "";
-    game.player.updateHealthCount();
-    game.updateInventoryPlayability();
-    //game.opponentTurn();*/
 })
-
-const opponentHand = document.createElement("div");
-opponentHand.classList.add("opponentHand")
-opponentHand.setAttribute("aria-describedby", "opponentHandLabel")
-/*for (const card of client.getOpponent().cards) {
-    opponentHand.appendChild(card.wrapper);
-}*/
-app.appendChild(opponentHand);
-
-const opponentHandLabel = document.createElement("span");
-opponentHandLabel.classList.add("opponentHandLabel");
-opponentHandLabel.id = "opponentHandLabel";
-opponentHandLabel.textContent = "Dealer's cards";
-app.appendChild(opponentHandLabel);
 
 const drawAmountText = document.createElement("span");
 drawAmountText.classList.add("drawAmountText")
@@ -385,11 +303,6 @@ playerCardCount.classList.add("playerCardCount");
 playerCardCount.textContent = "7 cards";
 app.appendChild(playerCardCount)
 
-const opponentCardCount = document.createElement("div");
-opponentCardCount.classList.add("opponentCardCount");
-opponentCardCount.textContent = "7 cards";
-app.appendChild(opponentCardCount)
-
 const reobtainRack = document.createElement("div");
 reobtainRack.classList.add("reobtainRack");
 reobtainRack.hidden = true;
@@ -407,10 +320,11 @@ playerLiveCounter.classList.add("playerLiveCounter")
 playerLiveCounter.textContent = "Lives: 2";
 app.appendChild(playerLiveCounter);
 
+/*
 const opponentLiveCounter = document.createElement("span");
 opponentLiveCounter.classList.add("opponentLiveCounter")
 opponentLiveCounter.textContent = "Lives: 2";
-app.appendChild(opponentLiveCounter);
+app.appendChild(opponentLiveCounter);*/
 
 const playerHealthBar = document.createElement("div");
 playerHealthBar.classList.add("playerHealthBar");
@@ -426,6 +340,7 @@ playerHealthBarContent.style.width = "100%";
 playerHealthBarContent.classList.add("healthBarContent");
 playerHealthBar.appendChild(playerHealthBarContent);
 
+/*
 const opponentHealthBar = document.createElement("div");
 opponentHealthBar.classList.add("opponentHealthBar");
 const opponentHealthCount = document.createElement("span");
@@ -437,7 +352,7 @@ app.appendChild(opponentHealthBar);
 const opponentHealthBarContent = document.createElement("div");
 opponentHealthBarContent.style.width = "100%";
 opponentHealthBarContent.classList.add("healthBarContent");
-opponentHealthBar.appendChild(opponentHealthBarContent);
+opponentHealthBar.appendChild(opponentHealthBarContent);*/
 
 const abilityChooser = document.createElement("div");
 abilityChooser.classList.add("abilityChooser");
@@ -546,12 +461,3 @@ towerChooser.addEventListener("animationend", e => {
 towerChooser.appendChild(towerChooserInner)
 towerChooser.hidden = true;
 app.appendChild(towerChooser);
-
-setTimeout(() => {
-    if (!client.isMultiplayer) {
-        console.log("updateDiscarded")
-        client.game?.updateDiscarded();
-        client.game?.addPlayer(false);
-        client.game?.addPlayer(true);
-    }
-}, 0);

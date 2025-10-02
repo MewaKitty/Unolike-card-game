@@ -14,5 +14,13 @@
         "name": "Blank",
         "description": "Just an everyday ordinary blank card.",
         "wild": true
+    },
+    {
+        "name": "Swap",
+        "actionId": "swap"
+    },
+    {
+        "name": "Shuffle",
+        "actionId": "shuffle"
     }
 ]

@@ -1,4 +1,4 @@
-import { updateInventoryPlayability } from "./client.ts";
+import { updateInventoryPlayability, type Game } from "./game.ts";
 import { shuffleArray, randomInteger, wait, random } from "./utils.ts";
 import { Card } from "./cards.ts";
 

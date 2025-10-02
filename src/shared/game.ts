@@ -54,8 +54,9 @@ export abstract class Game extends BaseGame {
     /**
      * Adds a player to the game.
      * @param identifier Differs depending on the kind of server.
+     * @returns The added player.
      */
-    abstract addPlayer (identifier: any): void
+    abstract addPlayer (identifier: any): Promise<Player>
 
     /**
      * Retrieves a player from the game.
@@ -114,7 +115,7 @@ export abstract class Game extends BaseGame {
                         type: "drawAmount",
                         value: this.drawAmount
                     })
-                    await wait(500);
+                    await wait(550);
                 }
                 this.currentTurn++;
                 if (this.currentTurn >= this.players.length) this.currentTurn = 0;
@@ -127,10 +128,12 @@ export abstract class Game extends BaseGame {
                 if (this.pickupCard.id !== packet.card) return;
                 console.log(this.pickupCard)
                 player.addCard(this.pickupCard, packet.animate);
+                let animateTime = 550;
                 for (let i = 0; i < this.drawAmount - 1; i++) {
-                    if (packet.animate) await wait(550);
-                    player.addCard(this.pickupCard, true);
-                    if (!packet.animate) await wait(550);
+                    if (packet.animate) await wait(animateTime);
+                    player.addCard(this.pickupCard, true, animateTime / 1.1);
+                    if (!packet.animate) await wait(animateTime);
+                    animateTime /= 1.1;
                 }
                 this.drawAmount = 0;
                 this.broadcast({

@@ -208,6 +208,7 @@ body, html {
   top: 12rem;
   right: 8rem;
   font-family: Cabin;
+  width: 6rem;
 }
 .cardDiscard .card {
   cursor: default;
@@ -1250,6 +1251,15 @@ div.selectedCard {
   font-size: 1rem;
 }
 
+.gameMenuRooms {
+  position: absolute;
+  top: 30vh;
+  left: calc(50vw + 7rem);
+  transform: translateX(-50%);
+  font-weight: bold;
+  font-size: 1rem;
+}
+
 .cardShowcase {
   position: absolute;
   left: 0;
@@ -1261,12 +1271,12 @@ div.selectedCard {
   opacity: 0.6;
 }
 
-.gameMenuSingleplayer.card {
+.gameMenuSingleplayer.card, .gameMenuRooms.card {
   height: 11rem;
   width: 8rem;
 }
 
-.gameMenuSingleplayer:hover {
+.gameMenuSingleplayer:hover, .gameMenuRooms:hover {
   transform: translateX(-50%) scale(1.1);
 }
 
@@ -1275,9 +1285,14 @@ div.selectedCard {
   --dark: #000099;
 }
 
-.gameMenuSingleplayerInner.cardInner:hover {
+.gameMenuSingleplayerInner.cardInner:hover, .gameMenuRooms.cardInner:hover {
   --color: #cacaff;
   --dark: #2020a9;
+}
+
+.gameMenuRoomsInner.cardInner {
+  --color: #ffaaaa;
+  --dark: #990000;
 }
 
 .cardCreatorButton.card {
@@ -1322,7 +1337,40 @@ div.selectedCard {
   box-sizing: border-box;
 }
 
+@media (prefers-color-scheme: dark) {
+  .singleplayerMenu {
+    background: #333;
+  }
+}
+
 .singleplayerMenu[hidden] {
+  display: none;
+}
+
+.roomsMenu {
+  position: fixed;
+  width: 90vw;
+  height: 90vh;
+  background: white;
+  border: 2px solid black;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 1rem;
+  display: flex;
+  font-size: 2rem;
+  z-index: 10;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+@media (prefers-color-scheme: dark) {
+  .roomsMenu {
+    background: #333;
+  }
+}
+
+.roomsMenu[hidden] {
   display: none;
 }
 
@@ -1347,20 +1395,20 @@ canvas {
   opacity: 0.6;
 }
 
-.blurryMess img {
+.blurryMess img, .blurryMess source {
   position: absolute;
   transform: scale(.5) translateX(-50%) translateY(-50%);
-  animation: blurryMess 30s;
+  animation: blurryMess 1s;
 }
 
 @keyframes blurryMess {
   from {
     left: 0;
-    top: 0
+    top: 0;
   }
   to {
-    left: -100vw;
-    top: -100vh;
+    left: -5rem;
+    top: -5rem;
   }
 }
 
@@ -1369,4 +1417,55 @@ svg {
   z-index: 10;
   width: 100vw;
   height: 100vh;
+}
+
+@keyframes fadeAway {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes fadeAwayZ2 {
+  from {
+    z-index: 2;
+    opacity: 1;
+  }
+  to {
+    z-index: 2;
+    opacity: 0;
+  }
+}
+
+.singleplayerMenu h2 {
+  margin: 0;
+  font-size: 2.5rem;
+  font-family: LilitaOne;
+}
+
+.twoDealerGame #opponentSeat1 {
+  position: absolute;
+  left: 50vw;
+  top: 0;
+}
+
+.twoDealerGame .opponentHand .cardWrapper {
+  margin-right: -6rem;
+}
+
+.twoDealerGame .opponentHand .cardWrapper:last-child {
+  margin-right: 0;
+}
+
+.createRoomButton {
+  padding: 0.5rem;
+  background: #333;
+  color: #ffffff;
+  font-size: 1.2rem;
+  font-family: Cabin;
+  border: none;
+  cursor: pointer;
+  border-radius: 0.1rem;
 }

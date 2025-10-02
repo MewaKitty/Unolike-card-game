@@ -13,13 +13,14 @@
   cursor: pointer;
   box-sizing: border-box;
   --translateY: 0;
-  transition: left 80ms, top 80ms, opacity 160ms, width 320ms, max-width 320ms, min-width 320ms, margin-right 320ms, transform 320ms;
+  transition: left 80ms, top 80ms, opacity 160ms, width 320ms, max-width 320ms, min-width 320ms, margin-right 320ms, transform 320ms, outline 160ms;
   background: white;
   box-sizing: border-box;
   white-space: pre-line;
   -webkit-user-select: none;
   user-select: none;
   font-family: Cabin;
+  font-weight: 600;
   -webkit-box-shadow: 3px 3px 3px 0px #0000005f; 
   box-shadow: 3px 3px 3px 0px #0000005f;
   text-align: left;

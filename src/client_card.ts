@@ -57,6 +57,9 @@ export class ClientCard extends BaseCard {
         let pointerDownTime = 0;
         div.addEventListener("pointerdown", e => {
             const card = this.game.cardData[this.id] ?? this;
+            this.color ??= card.color;
+            this.number ??= card.number;
+            this.modifier ??= card.modifier;
             client.updateInventoryPlayability();
             console.log("client", client)
             console.log("this", this)

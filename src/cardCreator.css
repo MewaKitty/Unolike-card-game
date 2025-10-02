@@ -114,7 +114,7 @@
   height: 3rem;
 }
 
-.previewCard, .cardCreatorRightPanel .card {
+.previewCard, .cardCreatorLeftPanel .card, .cardCreatorRightPanel .card {
   font-size: 1rem;
 }
 
@@ -161,4 +161,48 @@
 
 .copyJSONButton:hover {
   background-color: #999;
+}
+
+.effectCreateDiv {
+  display: flex;
+  gap: 1rem;
+}
+
+.cardCreatorEffectsPanel {
+  width: 40vw;
+  background: #eee;
+  padding: 2rem;
+  overflow-y: scroll;
+}
+
+.cardCreatorEffectsPanel h3 {
+  margin: 0;
+  font-size: 2.5rem;
+  font-family: LilitaOne;
+}
+
+.cardCreatorEffectsPanel select {
+  padding: 1rem;
+  font-family: Cabin, sans-serif;
+  font-size: 1rem;
+  background: #ddd;
+  border: 1px solid #999;
+  border-radius: .5rem;
+  cursor: pointer;
+  flex-grow: 1;
+}
+
+.cardCreatorEffectsPanel select:hover {
+  background: #bbb;
+}
+
+.cardCreatorEffectsPanel option {
+  font-size: 1rem;
+  background: #ddd;
+}
+
+.addEffectButton {
+  padding: 1rem;
+  font-family: Cabin, sans-serif;
+  font-size: 1rem;
 }

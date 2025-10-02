@@ -102,7 +102,8 @@ interface PickupPacket {
     card: CardData,
     pickupQueuePush: CardData,
     player: string,
-    animate: boolean
+    animate: boolean,
+    duration: number
 }
 interface DrawAmountPacket {
     type: "drawAmount",
@@ -171,7 +172,7 @@ export class Client extends BaseGame {
     /**
      * Re-renders the discard piles.
      */
-    updateDiscardPiles () {
+    updateDiscardPiles() {
         for (let i = 0; i < 4; i++) {
             const pileContents = this.discarded[i];
             const cardDiscard = document.getElementsByClassName("cardDiscard" + i)[0];
@@ -209,7 +210,7 @@ export class Client extends BaseGame {
      * @param id The id of the player to retrieve.
      * @returns The client player.
      */
-    getPlayer (id: string) {
+    getPlayer(id: string) {
         return this.players.find(player => player.id === id);
     }
 
@@ -225,10 +226,15 @@ export class Client extends BaseGame {
                 this.players = packet.players.map(player => new ClientPlayer(player))
                 this.selfId = packet.selfId;
                 for (const card of client.getSelfPlayer().cards) document.getElementsByClassName("cardRack")[0]!.appendChild(card.wrapper);
-                document.querySelector(".opponentHand")!.textContent = "";
-                for (const card of client.getOpponent().cards) {
-                    document.querySelector(".opponentHand")!.appendChild(card.wrapper);
-                }
+                for (const player of client.players) {
+                    if (player.id === client.getSelfPlayer().id) continue;
+                    console.log("player", player)
+                    console.log("game", client)
+                    document.getElementById("opponentHand" + player.id)!.textContent = "";
+                    for (const card of player.cards) {
+                        document.getElementById("opponentHand" + player.id)!.appendChild(card.wrapper);
+                    }
+                };
                 for (const player of this.players) {
                     for (const card of player.cards) {
                         this.cardData[card.id] = card;
@@ -250,7 +256,7 @@ export class Client extends BaseGame {
                     this.discarded.push(discard.map(card => new ClientCard(card)))
                     this.cardData[this.discarded.at(-1)![0].id] = this.discarded.at(-1)![0];
                 }
-                
+
                 this.pickupCard = new ClientCard(packet.pickupCard);
                 this.cardData[this.pickupCard.id] = this.pickupCard;
                 this.pickupQueue = packet.pickupQueue.map(card => new ClientCard(card));
@@ -264,35 +270,35 @@ export class Client extends BaseGame {
                 }
 
                 document.querySelector(".pickupPile")?.appendChild((client.pickupCard!).wrapper)
-                
+
                 client.pickupCard!.hidden = false;
-                client.pickupCard!.updateElement();
+                client.pickupCard!.updateElement(false);
 
                 for (let i = 0; i < 4; i++) {
                     client.pickupQueue[i].hidden = false;
-                    client.pickupQueue[i].updateElement();
+                    client.pickupQueue[i].updateElement(false);
                     document.querySelector(".pickupQueue")?.appendChild(client.pickupQueue[i].wrapper);
                 }
                 break;
             case "discard":
-                console.log("Discard time!")
-                this.discarded[packet.pile].push(new ClientCard(packet.card))
-                const cardElem = this.discarded[packet.pile].at(-1)!.wrapper;
+                console.log("Discard time!");
+                (new ClientCard(packet.card)).updateElement(false);
+                const cardElem = document.getElementById("card-" + packet.card.id) ?? (new ClientCard(packet.card)).wrapper //this.discarded[packet.pile].at(-1)!.wrapper;
+                console.log("destination", (document.getElementsByClassName("cardDiscard" + packet.pile)[0]?.children[0]));
                 await this.animateElementMovement(cardElem, (document.getElementsByClassName("cardDiscard" + packet.pile)[0]?.children[0] ?? document.getElementsByClassName("cardDiscard" + packet.pile)[0]) as HTMLElement, false);
+                this.discarded[packet.pile].push(new ClientCard(packet.card))
                 cardElem.style.position = "";
                 document.getElementsByClassName("cardDiscard" + packet.pile)[0].textContent = "";
                 document.getElementsByClassName("cardDiscard" + packet.pile)[0].appendChild(cardElem)
-                this.discarded[packet.pile].at(-1)!.updateElement();
+                this.discarded[packet.pile].at(-1)!.updateElement(false);
                 const secondCard = this.discarded[packet.pile].at(-1)!;
                 secondCard.element.classList.remove("selectedCard");
                 const selectedCard = client.selectedCards.find(card => secondCard.id === card.id);
                 if (selectedCard) client.selectedCards.splice(client.selectedCards.indexOf(selectedCard), 1);
                 for (const player of client.players) {
                     for (const card of player.cards) {
-                        console.log("cardId", card.id, "packet", packet.card.id)
                         if (card.id === packet.card.id) {
-                            console.log("removing!")
-                            secondCard.updateElement();
+                            secondCard.updateElement(false);
                             player.cards.splice(player.cards.indexOf(card), 1);
                             client.updateInventoryPlayability();
                         }
@@ -309,10 +315,10 @@ export class Client extends BaseGame {
                 if (packet.player !== client.selfId) {
                     const placeholderDiv = document.createElement("div");
                     placeholderDiv.classList.add("placeholderGap");
-                    document.querySelector(".opponentHand")!.appendChild(placeholderDiv)
-                    await client.animateElementMovement(card.element, placeholderDiv, card.wrapper);
+                    document.getElementById("opponentHand" + packet.player)!.appendChild(placeholderDiv)
+                    await client.animateElementMovement(card.element, placeholderDiv, card.wrapper, packet.duration);
                     placeholderDiv.remove();
-                    document.querySelector(".opponentHand")!.appendChild(card.wrapper);
+                    document.getElementById("opponentHand" + packet.player)!.appendChild(card.wrapper);
                     client.getPlayer(packet.player)!.cards.push(card);
                 } else {
                     const cardRack = document.getElementsByClassName("cardRack")[0] as HTMLDivElement;
@@ -321,14 +327,14 @@ export class Client extends BaseGame {
                         placeholderDiv.classList.add("placeholderDiv");
                         placeholderDiv.classList.add("wrapper");
                         cardRack.appendChild(placeholderDiv)
-                        await client.animateElementMovement(card.element, placeholderDiv, card.wrapper);
+                        await client.animateElementMovement(card.element, placeholderDiv, card.wrapper, packet.duration);
                         placeholderDiv.remove();
                     }
                     cardRack.appendChild(card.wrapper);
                     if (client.getSelfPlayer().cards.includes(card)) client.getSelfPlayer().cards.splice(client.getSelfPlayer().cards.indexOf(card), 1)
                     client.getSelfPlayer().cards.push(card);
                     card.hidden = false;
-                    card.updateElement();
+                    card.updateElement(false);
                     client.updateInventoryPlayability();
                 }
                 card.tags.splice(card.tags.indexOf("pickup"), 1);
@@ -402,7 +408,10 @@ export class Client extends BaseGame {
             }
         }
         if (document.getElementsByClassName("playerCardCount")[0]) document.getElementsByClassName("playerCardCount")[0].textContent = client.getSelfPlayer().getCardCount() + " cards";
-        if (document.getElementsByClassName("opponentCardCount")[0]) document.getElementsByClassName("opponentCardCount")[0].textContent = client.getOpponent().getCardCount() + " cards";
+        for (const player of this.players) {
+            if (player.id === this.getSelfPlayer().id) continue;
+            if (document.getElementById("opponentCardCount" + player.id)) document.getElementById("opponentCardCount" + player.id)!.textContent = player.getCardCount() + " cards";
+        }
         /*if (hasPlayable) {
             document.getElementsByClassName("pickupPile")[0]?.classList.add("unplayable")
         } else {
@@ -415,27 +424,34 @@ export class Client extends BaseGame {
      * @param element The child element to move.
      * @param destination The destination to visually go to.
      * @param parent The destination to append the child to; set to false to not add
+     * @param duration The amount of milliseconds to animate for.
      */
-    animateElementMovement(element: HTMLElement, destination: HTMLElement, parent: Element | false): Promise<null> {
+    animateElementMovement(element: HTMLElement, destination: HTMLElement, parent: Element | false, duration?: number): Promise<null> {
         return new Promise(res => {
+            console.log("element", element)
             console.debug(element.getBoundingClientRect())
             console.debug(destination)
-            element.style.transition = "left .5s, top .5s"
+            element.style.left = element.getBoundingClientRect().left + "px";
+            element.style.top = element.getBoundingClientRect().top + "px";
+            element.style.transition = `left ${duration ?? 500}ms, top ${duration ?? 500}ms`
             element.style.position = "fixed";
             setTimeout(() => {
-                element.style.left = element.getBoundingClientRect().left + "px";
-                element.style.top = element.getBoundingClientRect().top + "px";
+                //setTimeout(() => {
+                console.log(element)
+                console.debug("element", element.getBoundingClientRect())
+                console.log(destination)
+                console.log("destination", destination.getBoundingClientRect())
+                debugger;
+                element.style.left = destination.getBoundingClientRect().left + "px";
+                element.style.top = destination.getBoundingClientRect().top + "px";
                 setTimeout(() => {
-                    element.style.left = destination.getBoundingClientRect().left + "px";
-                    element.style.top = destination.getBoundingClientRect().top + "px";
-                    setTimeout(() => {
-                        if (parent) element.style.position = "";
-                        if (parent) parent.appendChild(element);
-                        //this.updateCardDiscard();
-                        element.style.transition = "";
-                        res(null);
-                    }, 500)
-                }, 0)
+                    if (parent) element.style.position = "";
+                    if (parent) parent.appendChild(element);
+                    //this.updateCardDiscard();
+                    element.style.transition = "";
+                    res(null);
+                }, duration ?? 500)
+                //}, 0)
             });
         });
     }

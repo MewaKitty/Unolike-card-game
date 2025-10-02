@@ -1,4 +1,5 @@
 import "./cardCreator.css";
+import effectData from "./data/effects.json";
 
 const cardCreator = document.querySelector<HTMLDivElement>(".cardCreatorMenu")!;
 
@@ -163,4 +164,44 @@ copyJSONButton.addEventListener("click", async () => {
     await navigator.clipboard.writeText(JSON.stringify(data));
     copyJSONButton.textContent = "Copied!";
     setTimeout(() => copyJSONButton.textContent = "Copy JSON", 1000)
+})
+
+const cardCreatorEffectsPanel = document.createElement("div");
+cardCreatorEffectsPanel.classList.add("cardCreatorEffectsPanel");
+cardCreator.appendChild(cardCreatorEffectsPanel);
+
+const cardCreatorEffectsLabel = document.createElement("h3");
+cardCreatorEffectsLabel.textContent = "Effects";
+cardCreatorEffectsPanel.appendChild(cardCreatorEffectsLabel);
+
+const effectCreateDiv = document.createElement("div");
+effectCreateDiv.classList.add("effectCreateDiv");
+
+const effectSelect = document.createElement("select");
+for (const effect of effectData) {
+    const optionElement = document.createElement("option");
+    optionElement.value = effect.id;
+    optionElement.textContent = effect.name;
+    effectSelect.appendChild(optionElement);
+}
+effectCreateDiv.appendChild(effectSelect);
+
+const addEffectButton = document.createElement("button");
+addEffectButton.classList.add("addEffectButton");
+addEffectButton.textContent = "Add effect";
+effectCreateDiv.appendChild(addEffectButton);
+
+cardCreatorEffectsPanel.appendChild(effectCreateDiv);
+
+addEffectButton.addEventListener("click", () => {
+    const effect = effectData.find(effect => effect.id === effectSelect.value);
+    if (!effect) return;
+    const effectDiv = document.createElement("div");
+    const effectNameHeader = document.createElement("h4");
+    effectNameHeader.textContent = effect.name ?? null;
+    effectDiv.appendChild(effectNameHeader);
+    cardCreatorEffectsPanel.appendChild(effectDiv);
+    for (const field of effect.fields) {
+        
+    }
 })

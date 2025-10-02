@@ -24,6 +24,7 @@ export class ServerGame extends Game {
                 selfId: player.id
             })
         };
+        return player;
     }
     getPlayer (ws: ServerWebSocket<unknown>) {
         return this.players.find(player => player.ws === ws);
@@ -36,5 +37,3 @@ export class ServerGame extends Game {
         return false;
     }
 }
-
-export const rooms = [];

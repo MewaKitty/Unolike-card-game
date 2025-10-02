@@ -1,6 +1,17 @@
 import { ServerGame } from "./server_game.ts";
 const game = new ServerGame();
-
+const rooms: Room[] = [];
+class Room {
+    code: string;
+    constructor () {
+        this.code = Math.floor(Math.random() * 1000000) + "";
+    }
+    data () {
+        return {
+            code: this.code
+        }
+    }
+}
 Bun.serve({
     port: "3000",
     routes: {
@@ -10,6 +21,18 @@ Bun.serve({
                 return; // do not return a Response
             }
             return new Response("Upgrade failed", { status: 500 });
+        },
+        "/api/rooms": (req) => {
+            if (req.method === "GET") {
+                return new Response(JSON.stringify(rooms.map(room => room.data())), {
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Access-Control-Allow-Origin": "*"
+                    }
+                });
+            } else if (req.method === "POST") {
+                rooms.push(new Room())
+            }
         },
     },
     fetch (req, server) {
