@@ -3,6 +3,7 @@ import topLevelAwait from "vite-plugin-top-level-await";
 import { defineConfig } from 'vite'
 
 export default defineConfig({
+  base: "https://mewakitty.github.io/Uno-like_card_game/",
   plugins: [
     legacy({
       targets: ['defaults', 'cover 90%'],
