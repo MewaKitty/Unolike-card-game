@@ -1,0 +1,11 @@
+[
+    {
+        "id": "swap",
+        "name": "Swap",
+        "fields": [
+            {
+                "type": "target"
+            }
+        ]
+    }
+]
