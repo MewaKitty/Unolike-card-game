@@ -87,6 +87,7 @@ const startButton = document.createElement("button");
 startButton.classList.add("startButton");
 startButton.textContent = "Start";
 startButton.addEventListener("click", async () => {
+    /*
     if (!client.isMultiplayer) {
         console.log("updateDiscarded")
         client.game?.updateDiscarded();
@@ -98,8 +99,9 @@ startButton.addEventListener("click", async () => {
             document.querySelector<HTMLDivElement>("#app")!.classList.add("twoDealerGame")
         }
         if (selectedDealerAmount === 2) await client.game!.addPlayer(true);;
-    }
+    }*/
     document.querySelector<HTMLDivElement>("#app")!.hidden = false;
+    document.querySelector<HTMLDivElement>(".cardShowcase")!.hidden = true;
     document.querySelector<HTMLDivElement>(".mainMenu")!.hidden = true;
     document.querySelector<HTMLDivElement>("#app")!.tabIndex = -1;
     document.querySelector<HTMLDivElement>(".abilityChooser")!.hidden = false;
